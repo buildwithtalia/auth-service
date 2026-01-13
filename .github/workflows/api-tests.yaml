@@ -137,7 +137,16 @@ jobs:
         continue-on-error: true
         run: |
           echo "🧪 Running Postman collection tests..."
-          postman collection run 44848164-45b1e245-e286-48ce-8c1b-b0e3494df067 -i 44848164-6251eb04-820c-4d39-aab0-eda51989d3a5 \
+          echo "📁 Using local collection: postman/collections/Auth Service API.postman_collection.json"
+          echo "🔧 Environment variables:"
+          echo "  - baseUrl=http://localhost"
+          echo "  - loginServicePort=3001"
+          echo "  - logoutServicePort=3002"
+          echo "  - loginServiceUrl=http://localhost:3001"
+          echo "  - logoutServiceUrl=http://localhost:3002"
+          echo ""
+
+          postman collection run "postman/collections/Auth Service API.postman_collection.json" \
             --reporters cli,json,html \
             --reporter-json-export newman/test-results.json \
             --reporter-html-export newman/test-results.html \
@@ -146,7 +155,8 @@ jobs:
             --env-var "logoutServicePort=3002" \
             --env-var "loginServiceUrl=http://localhost:3001" \
             --env-var "logoutServiceUrl=http://localhost:3002" \
-            --bail || echo "⚠️ Some tests may have failed, but reports were generated"
+            --verbose \
+            || echo "⚠️ Some tests may have failed, but all tests were attempted and reports were generated"
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
