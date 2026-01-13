@@ -146,7 +146,7 @@ jobs:
           echo "  - logoutServiceUrl=http://localhost:3002"
           echo ""
 
-          postman collection run "postman/collections/Auth Service API.postman_collection.json" \
+          postman collection run "postman/collections/Auth Service API.postman_collection.json" --report-events \
             --reporters cli,json,html \
             --reporter-json-export newman/test-results.json \
             --reporter-html-export newman/test-results.html \
