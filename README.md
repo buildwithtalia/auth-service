@@ -1,6 +1,7 @@
 # Authentication Microservices
 
-A secure, production-ready authentication system built with a microservices architecture using Node.js, Express, and MongoDB. The system is split into two specialized services: **Login Service** and **Logout Service** for better scalability and separation of concerns.
+A secure, production-ready authentication system built with a microservices architecture using Node.js, Express, and MongoDB. 
+The system is split into two specialized services: **Login Service** and **Logout Service** for better scalability and separation of concerns.
 
 ## ⚡ Quick Start
 
