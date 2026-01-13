@@ -18,33 +18,107 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
+          cache-dependency-path: |
+            login-service/package-lock.json
+            logout-service/package-lock.json
 
-      - name: Install backend dependencies
-        working-directory: backend
+      - name: Install login service dependencies
+        working-directory: login-service
         run: npm ci
 
-      - name: Start backend server
-        working-directory: backend
+      - name: Install logout service dependencies
+        working-directory: logout-service
+        run: npm ci
+
+      - name: Install shared dependencies
+        working-directory: shared
+        run: npm ci
+
+      - name: Start MongoDB
+        run: |
+          echo "Starting MongoDB container..."
+          docker run -d -p 27017:27017 --name mongodb -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=password123 mongo:latest
+
+          echo "Waiting for MongoDB container to start..."
+          sleep 15
+
+          echo "Checking MongoDB container status..."
+          docker ps | grep mongodb || docker logs mongodb
+
+          echo "Waiting for MongoDB to accept connections..."
+          timeout=90
+          while [ $timeout -gt 0 ]; do
+            if docker exec mongodb mongosh --eval "db.runCommand('ping')" --quiet >/dev/null 2>&1; then
+              echo "MongoDB is ready!"
+              break
+            elif docker exec mongodb mongo --eval "db.runCommand('ping')" --quiet >/dev/null 2>&1; then
+              echo "MongoDB is ready! (using legacy mongo shell)"
+              break
+            else
+              echo "MongoDB not ready yet, waiting... ($timeout seconds left)"
+              sleep 3
+              timeout=$((timeout - 3))
+            fi
+          done
+
+          if [ $timeout -le 0 ]; then
+            echo "MongoDB failed to start within 90 seconds"
+            echo "Container logs:"
+            docker logs mongodb
+            echo "Container status:"
+            docker ps -a | grep mongodb
+            exit 1
+          fi
+
+      - name: Start login service
+        working-directory: login-service
         run: |
           node server.js &
-          echo $! > server.pid
+          echo $! > login-server.pid
         env:
-          PORT: 4000
+          NODE_ENV: development
+          PORT: 3001
+          MONGODB_URI: mongodb://admin:password123@localhost:27017/login-service-test?authSource=admin
+          JWT_SECRET: test-jwt-secret-key-32-characters-minimum
+          JWT_REFRESH_SECRET: test-refresh-jwt-secret-32-characters-minimum
 
-      - name: Wait for server to be ready
+      - name: Start logout service
+        working-directory: logout-service
         run: |
-          echo "Waiting for server to start..."
+          node server.js &
+          echo $! > logout-server.pid
+        env:
+          NODE_ENV: development
+          PORT: 3002
+          MONGODB_URI: mongodb://admin:password123@localhost:27017/login-service-test?authSource=admin
+          JWT_SECRET: test-jwt-secret-key-32-characters-minimum
+          JWT_REFRESH_SECRET: test-refresh-jwt-secret-32-characters-minimum
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for login service to start..."
           timeout=30
-          while ! curl -s http://localhost:4000 > /dev/null 2>&1; do
+          while ! curl -s http://localhost:3001/health > /dev/null 2>&1; do
             sleep 1
             timeout=$((timeout - 1))
             if [ $timeout -le 0 ]; then
-              echo "Server failed to start within 30 seconds"
+              echo "Login service failed to start within 30 seconds"
               exit 1
             fi
           done
-          echo "Server is ready!"
+          echo "Login service is ready!"
+
+          echo "Waiting for logout service to start..."
+          timeout=30
+          while ! curl -s http://localhost:3002/health > /dev/null 2>&1; do
+            sleep 1
+            timeout=$((timeout - 1))
+            if [ $timeout -le 0 ]; then
+              echo "Logout service failed to start within 30 seconds"
+              exit 1
+            fi
+          done
+          echo "Logout service is ready!"
 
       - name: Install Postman CLI
         run: |
@@ -63,11 +137,15 @@ jobs:
         continue-on-error: true
         run: |
           echo "🧪 Running Postman collection tests..."
-          postman collection run 45b1e245-e286-48ce-8c1b-b0e3494df067 \
+          postman collection run "postman/collections/Auth Service API.postman_collection.json" \
             --reporters cli,json,html \
             --reporter-json-export newman/test-results.json \
             --reporter-html-export newman/test-results.html \
-            --env-var baseURL=http://localhost:4000 \
+            --env-var "baseUrl=http://localhost" \
+            --env-var "loginServicePort=3001" \
+            --env-var "logoutServicePort=3002" \
+            --env-var "loginServiceUrl=http://localhost:3001" \
+            --env-var "logoutServiceUrl=http://localhost:3002" \
             --bail || echo "⚠️ Some tests may have failed, but reports were generated"
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
@@ -75,14 +153,21 @@ jobs:
       - name: Lint API Specification
         run: postman spec lint "postman/specs/auth-service-api.yaml"
 
-      - name: Stop backend server
+      - name: Stop services
         if: always()
-        working-directory: backend
         run: |
-          if [ -f server.pid ]; then
-            kill $(cat server.pid) 2>/dev/null || true
-            rm server.pid
+          # Stop auth services
+          if [ -f login-service/login-server.pid ]; then
+            kill $(cat login-service/login-server.pid) 2>/dev/null || true
+            rm login-service/login-server.pid
           fi
+          if [ -f logout-service/logout-server.pid ]; then
+            kill $(cat logout-service/logout-server.pid) 2>/dev/null || true
+            rm logout-service/logout-server.pid
+          fi
+          # Stop MongoDB container
+          docker stop mongodb 2>/dev/null || true
+          docker rm mongodb 2>/dev/null || true
 
       - name: Upload test results
         if: always()
