@@ -2,6 +2,22 @@
 
 A secure, production-ready authentication system built with a microservices architecture using Node.js, Express, and MongoDB. The system is split into two specialized services: **Login Service** and **Logout Service** for better scalability and separation of concerns.
 
+## ⚡ Quick Start
+
+```bash
+# Clone and start everything with one command
+git clone <repository-url>
+cd auth-service
+./start-services.sh
+```
+
+**Services will be available at:**
+- 🔐 **Login Service**: http://localhost:3001
+- 🔓 **Logout Service**: http://localhost:3002
+- 📋 **API Documentation**: `postman/specs/auth-service-api.yaml`
+
+**✅ Automated CI/CD Testing**: Every pull request runs 25+ API tests across both services
+
 ## Architecture Overview
 
 ### 🔐 Login Service (Port 3001)
@@ -98,6 +114,29 @@ Common utilities and models used by both services:
 The services will start on:
 - **Login Service**: `http://localhost:3001`
 - **Logout Service**: `http://localhost:3002`
+
+### Using the Automated Start Script
+
+Alternatively, use the provided automated script:
+
+```bash
+# Start both services and MongoDB automatically
+./start-services.sh
+```
+
+This script will:
+- ✅ Check prerequisites (Node.js, npm, MongoDB/Docker)
+- ✅ Start MongoDB via Docker if not running
+- ✅ Install dependencies for both services
+- ✅ Create environment files from templates
+- ✅ Start both services in background
+- ✅ Verify services are healthy
+- ✅ Display service URLs and endpoints
+
+To stop the services:
+```bash
+./stop-services.sh
+```
 
 ## Environment Configuration
 
@@ -220,6 +259,90 @@ Authorization: Bearer <access_token>
 **Cleanup Expired Tokens**
 ```http
 POST /api/cleanup-tokens
+```
+
+### OpenAPI Specification
+
+Complete API documentation is available in OpenAPI 3.0 format:
+- **File**: `postman/specs/auth-service-api.yaml`
+- **Interactive Documentation**: Import the spec into Swagger UI or Postman
+- **Validation**: Automatically validated in CI/CD pipeline
+
+## Automated Testing & CI/CD
+
+### GitHub Actions Pipeline
+
+The project includes a comprehensive CI/CD pipeline that runs on every pull request:
+
+**Pipeline Steps:**
+1. 🔧 **Setup**: Install Node.js and dependencies for all services
+2. 🗄️ **Database**: Start MongoDB container with authentication
+3. 🚀 **Services**: Launch login service (3001) and logout service (3002)
+4. 🔍 **Health Checks**: Verify both services respond to `/health` endpoints
+5. 📋 **API Testing**: Run complete Postman test suite
+6. 📊 **Spec Validation**: Lint OpenAPI specification
+7. 📈 **Reports**: Generate test reports and upload artifacts
+8. 🧹 **Cleanup**: Stop services and containers
+
+**Workflow File**: `.github/workflows/api-tests.yaml`
+
+### Postman Test Suite
+
+Comprehensive API testing with Postman:
+
+**Collection**: `postman/collections/Auth Service API.postman_collection.json`
+
+**Test Coverage:**
+- ✅ **Login Service Tests** (14+ test cases)
+  - Health checks and service info
+  - User registration with validation
+  - User authentication with JWT extraction
+  - Profile retrieval with authorization
+  - Token refresh flow
+- ✅ **Logout Service Tests** (12+ test cases)
+  - Single session logout
+  - Multi-device logout
+  - Token blacklisting and validation
+  - Session management
+  - Token cleanup operations
+
+**Test Validations:**
+- **Status Codes**: 200, 201, 400, 401, etc.
+- **Response Times**: < 2000ms performance checks
+- **Headers**: Content-Type and security headers
+- **JSON Schema**: Response structure validation
+- **JWT Tokens**: Format validation and extraction
+- **Security**: Password exclusion, token format
+- **Variable Extraction**: Automatic token/ID extraction for request chaining
+
+### Running Tests Locally
+
+**Prerequisites:**
+- Postman CLI installed
+- Services running on localhost:3001 and localhost:3002
+
+**Run Collection:**
+```bash
+# Install Postman CLI
+npm install -g @postman/cli
+
+# Run the test suite
+postman collection run "postman/collections/Auth Service API.postman_collection.json" \
+  --env-var "baseUrl=http://localhost" \
+  --env-var "loginServicePort=3001" \
+  --env-var "logoutServicePort=3002" \
+  --reporters cli,html \
+  --reporter-html-export test-results.html
+```
+
+**Environment Variables for Testing:**
+```bash
+# Service URLs
+baseUrl=http://localhost
+loginServicePort=3001
+logoutServicePort=3002
+loginServiceUrl=http://localhost:3001
+logoutServiceUrl=http://localhost:3002
 ```
 
 ## Authentication Flow
@@ -510,20 +633,57 @@ Both services include structured logging:
 
 ### Project Structure
 ```
-authentication-microservices/
-├── shared/                    # Shared utilities and models
+auth-service/
+├── .github/
+│   └── workflows/
+│       ├── api-tests.yaml      # CI/CD pipeline for API testing
+│       └── working.yaml        # Reference working workflow
+├── shared/                     # Shared utilities and models
 │   ├── models/
+│   │   └── User.js            # Shared user model
 │   ├── utils/
-│   └── config/
-├── login-service/            # Login Service
+│   │   ├── jwt.js             # JWT token utilities
+│   │   └── password.js        # Password hashing utilities
+│   ├── config/
+│   │   └── config.js          # Shared configuration
+│   └── package.json           # Shared dependencies
+├── login-service/             # Login Service (Port 3001)
 │   ├── src/
-│   ├── server.js
-│   └── package.json
-├── logout-service/           # Logout Service
+│   │   ├── controllers/       # Route handlers
+│   │   ├── middleware/        # Auth, validation, error handling
+│   │   ├── models/           # Service-specific models
+│   │   ├── routes/           # API route definitions
+│   │   └── utils/            # Service utilities
+│   ├── server.js             # Login service entry point
+│   ├── package.json          # Login service dependencies
+│   ├── Dockerfile           # Docker configuration
+│   └── .env                 # Environment variables
+├── logout-service/           # Logout Service (Port 3002)
 │   ├── src/
-│   ├── server.js
-│   └── package.json
-└── README.md
+│   │   ├── controllers/      # Route handlers
+│   │   ├── middleware/       # Auth, validation, error handling
+│   │   ├── models/          # Blacklisted token model
+│   │   └── routes/          # API route definitions
+│   ├── server.js            # Logout service entry point
+│   ├── package.json         # Logout service dependencies
+│   ├── Dockerfile          # Docker configuration
+│   └── .env                # Environment variables
+├── postman/                 # API Testing Infrastructure
+│   ├── collections/
+│   │   └── Auth Service API.postman_collection.json  # Test collection
+│   ├── environments/        # Environment configurations
+│   ├── globals/
+│   │   └── workspace.postman_globals.json            # Global variables
+│   └── specs/
+│       └── auth-service-api.yaml                     # OpenAPI 3.0 spec
+├── logs/                    # Runtime logs (gitignored)
+│   ├── login-service.pid   # Process IDs for cleanup
+│   └── logout-service.pid
+├── docker-compose.yml      # Multi-service Docker setup
+├── start-services.sh       # Automated service startup
+├── stop-services.sh        # Automated service shutdown
+├── .gitignore             # Git exclusions
+└── README.md              # This documentation
 ```
 
 ### Adding New Services
@@ -554,10 +714,38 @@ To add a new service to the architecture:
 - Check service ports are correct
 - Verify request origins
 
+**GitHub Actions Pipeline Failures**
+- Check MongoDB startup timeout (increased to 90 seconds)
+- Verify environment variables are set correctly
+- Check service health endpoints are responding
+- Review Postman collection for failing tests
+
+**Postman Tests Not Running All Endpoints**
+- Ensure using local collection file, not remote collection ID
+- Remove `--bail` flag to run all tests regardless of failures
+- Check collection structure and test scripts
+- Verify environment variables match service configuration
+
+**Service Port Conflicts**
+- Login service must run on port 3001
+- Logout service must run on port 3002
+- Check no other services are using these ports
+- Update `.env` files if port conflicts occur
+
 ### Debug Mode
 Start services in debug mode:
 ```bash
 NODE_ENV=development DEBUG=* npm run dev
+```
+
+### View Service Logs
+```bash
+# View real-time logs
+tail -f logs/login-service.log
+tail -f logs/logout-service.log
+
+# View startup scripts logs
+./start-services.sh  # Shows detailed startup process
 ```
 
 ## Contributing
@@ -579,7 +767,55 @@ For issues and questions:
 - Check service health endpoints
 - Review logs for error details
 
+## Recent Improvements
+
+### ✅ Fixed CI/CD Pipeline (Latest)
+- **Issue**: Only health check endpoints were running in GitHub Actions
+- **Root Cause**: Incorrect collection reference and `--bail` flag stopping tests
+- **Solution**: Updated to use local collection file with full test execution
+- **Result**: Complete API test suite now runs (14+ login tests, 12+ logout tests)
+
+### ✅ Enhanced MongoDB Reliability
+- **Issue**: MongoDB startup timeouts in CI environment
+- **Solution**: Extended timeout to 90 seconds with enhanced error handling
+- **Added**: Support for both `mongosh` and legacy `mongo` shell commands
+- **Result**: Reliable database connectivity in all environments
+
+### ✅ Microservices Architecture Fixes
+- **Fixed**: Service route imports and port configurations
+- **Added**: Shared dependency management for common utilities
+- **Enhanced**: Environment variable management across services
+- **Result**: Reliable service startup and inter-service communication
+
+### ✅ Comprehensive API Testing
+- **Added**: Complete Postman collection with 25+ test cases
+- **Features**: Status code validation, response time checks, JWT validation
+- **Automation**: Variable extraction for request chaining
+- **Coverage**: All endpoints across both microservices
+
+### ✅ Documentation & Automation
+- **Added**: OpenAPI 3.0 specification for complete API documentation
+- **Created**: Automated startup/shutdown scripts
+- **Enhanced**: Docker and Docker Compose configurations
+- **Added**: Comprehensive troubleshooting guides
+
 ## Changelog
+
+### v1.2.0 (CI/CD & Testing Enhancement)
+- Implemented comprehensive GitHub Actions CI/CD pipeline
+- Added complete Postman test suite with 25+ test cases
+- Created OpenAPI 3.0 specification
+- Enhanced MongoDB reliability with 90-second timeout
+- Added automated service startup/shutdown scripts
+- Fixed microservices architecture communication issues
+- Added detailed troubleshooting documentation
+
+### v1.1.0 (Microservices Stabilization)
+- Fixed service route imports and port configurations
+- Added shared dependency management
+- Enhanced environment variable handling
+- Improved Docker configurations
+- Added service health checks
 
 ### v1.0.0 (Microservices Architecture)
 - Split monolithic service into Login and Logout services
