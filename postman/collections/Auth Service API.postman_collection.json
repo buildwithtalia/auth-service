@@ -77,6 +77,9 @@
             }
           ],
           "id": "0bcf83f5-4643-4307-9c4d-7471bd53b417",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -167,6 +170,9 @@
             }
           ],
           "id": "cd4b930d-a9aa-481d-bbb3-9540917b6f3b",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -281,6 +287,9 @@
             }
           ],
           "id": "ecff5370-de8a-4aff-a9f5-bf30ec86c051",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [
@@ -431,6 +440,9 @@
             }
           ],
           "id": "f2fd11c4-bd4c-4885-8535-e4a1ff36e670",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [
@@ -558,6 +570,9 @@
             }
           ],
           "id": "3ef63698-ffaf-4932-a80b-6b1bebc44ccb",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "GET",
             "header": [
@@ -684,6 +699,9 @@
             }
           ],
           "id": "867fb6f8-bbb1-4e7d-bea0-bef73b4a6ded",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [
@@ -783,6 +801,9 @@
             }
           ],
           "id": "01a323bc-14d3-4d0f-aefc-ad44d3e21724",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -873,6 +894,9 @@
             }
           ],
           "id": "67ae2c7b-045f-4824-a42a-85f7def35615",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -973,6 +997,9 @@
             }
           ],
           "id": "b5a869ff-df5c-4cd7-87c2-3ff28b73c780",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [
@@ -1086,6 +1113,9 @@
             }
           ],
           "id": "8dcaeb49-aade-40e4-8413-ac4744f9246b",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [
@@ -1202,6 +1232,9 @@
             }
           ],
           "id": "5a1f86da-25f2-43be-b333-6fdc4db8dab3",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [
@@ -1308,6 +1341,9 @@
             }
           ],
           "id": "61ab7d59-a768-4671-b903-9f2a40cb1af9",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -1324,6 +1360,7 @@
               ],
               "variable": [
                 {
+                  "id": "99f70270-92c1-49ee-b0fb-996bcf4b4813",
                   "key": "token"
                 }
               ]
@@ -1440,6 +1477,9 @@
             }
           ],
           "id": "1ba8640c-61db-4858-919d-3910ea281636",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "GET",
             "header": [
@@ -1547,6 +1587,9 @@
             }
           ],
           "id": "dcf9ce6d-8546-4bc7-a170-1be0cbe30167",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [],
@@ -1575,6 +1618,9 @@
         {
           "name": "Register User (Legacy)",
           "id": "eb749a19-7cfa-4fba-8399-91578c4ec877",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [
@@ -1606,6 +1652,9 @@
         {
           "name": "Login User (Legacy)",
           "id": "7153d3e5-1072-467a-8c0f-aebd7099cae3",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [
@@ -1637,6 +1686,9 @@
         {
           "name": "Logout User (Legacy)",
           "id": "93e50a0e-93cf-4865-9f9d-ea45724396ce",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [
@@ -1664,6 +1716,9 @@
         {
           "name": "Logout from All Devices (Legacy)",
           "id": "d647197e-88bd-47e7-89f0-fe71c63c46aa",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [
@@ -1691,6 +1746,9 @@
         {
           "name": "Get User Profile (Legacy)",
           "id": "2160662e-48ef-432a-9133-c44f7fd96136",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "GET",
             "header": [
@@ -1718,6 +1776,9 @@
         {
           "name": "Refresh Access Token (Legacy)",
           "id": "29255953-6859-4685-b5a9-e784babf0597",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "POST",
             "header": [],
