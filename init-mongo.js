@@ -1,0 +1,27 @@
+// MongoDB initialization script
+// This script runs when the container first starts
+
+// Switch to the login-service database
+db = db.getSiblingDB('login-service');
+
+// Create collections with proper indexes
+db.createCollection('users');
+db.createCollection('blacklistedtokens');
+
+// Create indexes for better performance
+db.users.createIndex({ email: 1 }, { unique: true });
+db.users.createIndex({ isActive: 1 });
+db.users.createIndex({ lastLogin: 1 });
+
+db.blacklistedtokens.createIndex({ token: 1 }, { unique: true });
+db.blacklistedtokens.createIndex({ tokenType: 1 });
+db.blacklistedtokens.createIndex({ userId: 1 });
+db.blacklistedtokens.createIndex({ expiresAt: 1 });
+db.blacklistedtokens.createIndex({ userId: 1, tokenType: 1 });
+
+// TTL index for automatic cleanup of expired tokens
+db.blacklistedtokens.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+print('Database initialization completed successfully');
+print('Created collections: users, blacklistedtokens');
+print('Created indexes for optimal performance');
