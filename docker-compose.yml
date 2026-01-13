@@ -21,8 +21,8 @@ services:
   # Login Service
   login-service:
     build:
-      context: .
-      dockerfile: ./login-service/Dockerfile
+      context: ./login-service
+      dockerfile: Dockerfile
     container_name: auth-login-service
     restart: unless-stopped
     ports:
@@ -53,8 +53,8 @@ services:
   # Logout Service
   logout-service:
     build:
-      context: .
-      dockerfile: ./logout-service/Dockerfile
+      context: ./logout-service
+      dockerfile: Dockerfile
     container_name: auth-logout-service
     restart: unless-stopped
     ports:

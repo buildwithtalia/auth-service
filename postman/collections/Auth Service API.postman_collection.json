@@ -1,0 +1,1777 @@
+{
+  "info": {
+    "_postman_id": "45b1e245-e286-48ce-8c1b-b0e3494df067",
+    "name": "Auth Service API",
+    "description": "A secure, production-ready authentication system built with a microservices architecture. The system is split into two specialized services: Login Service (port 3001) for user authentication and token generation, and Logout Service (port 3002) for token invalidation and session management.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Login Service",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Status Code Tests",
+                  "pm.test('Status code is 200 OK', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Response Time Tests",
+                  "pm.test('Response time is acceptable (under 500ms)', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});",
+                  "",
+                  "// Header Tests",
+                  "pm.test('Content-Type header is present', function() {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "// Schema Validation",
+                  "pm.test('Response has valid JSON body', function() {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "",
+                  "// Required Fields Tests",
+                  "pm.test('Response contains status field', function() {",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "});",
+                  "",
+                  "// Data Type Tests",
+                  "pm.test('Status field is a string', function() {",
+                  "    pm.expect(jsonData.status).to.be.a('string');",
+                  "});",
+                  "",
+                  "// Business Logic Tests",
+                  "pm.test('Service status indicates healthy state', function() {",
+                  "    const validStatuses = ['ok', 'healthy', 'up', 'running'];",
+                  "    pm.expect(validStatuses).to.include(jsonData.status.toLowerCase());",
+                  "});",
+                  "",
+                  "pm.test('Uptime is present and valid (if exists)', function() {",
+                  "    if (jsonData.uptime !== undefined) {",
+                  "        pm.expect(jsonData.uptime).to.be.a('number');",
+                  "        pm.expect(jsonData.uptime).to.be.at.least(0);",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Timestamp is present and valid (if exists)', function() {",
+                  "    if (jsonData.timestamp !== undefined) {",
+                  "        pm.expect(jsonData.timestamp).to.be.a('string');",
+                  "        pm.expect(new Date(jsonData.timestamp).toString()).to.not.equal('Invalid Date');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "0bcf83f5-4643-4307-9c4d-7471bd53b417",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}:{{loginServicePort}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{loginServicePort}}",
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Check if the Login Service is healthy and running"
+          },
+          "response": []
+        },
+        {
+          "name": "Service Info",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Status Code Tests",
+                  "pm.test('Status code is 200 OK', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Response Time Tests",
+                  "pm.test('Response time is acceptable (under 500ms)', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});",
+                  "",
+                  "// Header Tests",
+                  "pm.test('Content-Type header is present', function() {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "// Schema Validation",
+                  "pm.test('Response has valid JSON body', function() {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "",
+                  "// Required Fields Tests",
+                  "pm.test('Response contains service name', function() {",
+                  "    pm.expect(jsonData).to.have.property('service');",
+                  "});",
+                  "",
+                  "pm.test('Response contains version information', function() {",
+                  "    pm.expect(jsonData).to.have.property('version');",
+                  "});",
+                  "",
+                  "// Data Type Tests",
+                  "pm.test('Service name is a string', function() {",
+                  "    pm.expect(jsonData.service).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('Version is a string', function() {",
+                  "    pm.expect(jsonData.version).to.be.a('string');",
+                  "});",
+                  "",
+                  "// Business Logic Tests",
+                  "pm.test('Service name indicates Login Service', function() {",
+                  "    pm.expect(jsonData.service.toLowerCase()).to.include('login');",
+                  "});",
+                  "",
+                  "pm.test('Version follows semantic versioning pattern', function() {",
+                  "    const semverPattern = /^\\d+\\.\\d+\\.\\d+/;",
+                  "    pm.expect(jsonData.version).to.match(semverPattern);",
+                  "});",
+                  "",
+                  "pm.test('Endpoints array is present (if exists)', function() {",
+                  "    if (jsonData.endpoints !== undefined) {",
+                  "        pm.expect(jsonData.endpoints).to.be.an('array');",
+                  "        pm.expect(jsonData.endpoints.length).to.be.at.least(1);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "cd4b930d-a9aa-481d-bbb3-9540917b6f3b",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}:{{loginServicePort}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{loginServicePort}}",
+              "path": [
+                ""
+              ]
+            },
+            "description": "Get information about the Login Service and available endpoints"
+          },
+          "response": []
+        },
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Status Code Tests",
+                  "pm.test('Status code is 201 Created or 200 OK', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "",
+                  "pm.test('Status code is not 400 Bad Request (valid input)', function() {",
+                  "    pm.response.to.not.have.status(400);",
+                  "});",
+                  "",
+                  "// Response Time Tests",
+                  "pm.test('Response time is acceptable (under 2000ms)', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "// Header Tests",
+                  "pm.test('Content-Type header is present', function() {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "// Schema Validation",
+                  "pm.test('Response has valid JSON body', function() {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "",
+                  "// Required Fields Tests",
+                  "pm.test('Response contains success indicator or user data', function() {",
+                  "    const hasSuccess = jsonData.hasOwnProperty('success') || jsonData.hasOwnProperty('message');",
+                  "    const hasUser = jsonData.hasOwnProperty('user') || jsonData.hasOwnProperty('id');",
+                  "    pm.expect(hasSuccess || hasUser).to.be.true;",
+                  "});",
+                  "",
+                  "// Data Type Tests",
+                  "pm.test('User ID is valid (if present)', function() {",
+                  "    if (jsonData.user && jsonData.user.id) {",
+                  "        pm.expect(jsonData.user.id).to.be.a('string');",
+                  "    } else if (jsonData.id) {",
+                  "        pm.expect(jsonData.id).to.be.a('string');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Email in response matches request (if present)', function() {",
+                  "    if (jsonData.user && jsonData.user.email) {",
+                  "        pm.expect(jsonData.user.email).to.be.a('string');",
+                  "        pm.expect(jsonData.user.email).to.include('@');",
+                  "    }",
+                  "});",
+                  "",
+                  "// Business Logic Tests",
+                  "pm.test('Password is not returned in response', function() {",
+                  "    pm.expect(jsonData.password).to.be.undefined;",
+                  "    if (jsonData.user) {",
+                  "        pm.expect(jsonData.user.password).to.be.undefined;",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Tokens are provided on successful registration (if auto-login)', function() {",
+                  "    if (jsonData.accessToken) {",
+                  "        pm.expect(jsonData.accessToken).to.be.a('string');",
+                  "        // JWT format validation: header.payload.signature",
+                  "        const jwtPattern = /^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$/;",
+                  "        pm.expect(jsonData.accessToken).to.match(jwtPattern);",
+                  "        // Save token for subsequent requests",
+                  "        pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "    }",
+                  "    if (jsonData.refreshToken) {",
+                  "        pm.expect(jsonData.refreshToken).to.be.a('string');",
+                  "        pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+                  "    }",
+                  "});",
+                  "",
+                  "// Variable Extraction",
+                  "pm.test('Save user ID for subsequent requests', function() {",
+                  "    if (jsonData.user && jsonData.user.id) {",
+                  "        pm.collectionVariables.set('userId', jsonData.user.id);",
+                  "    } else if (jsonData.id) {",
+                  "        pm.collectionVariables.set('userId', jsonData.id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "ecff5370-de8a-4aff-a9f5-bf30ec86c051",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}:{{loginServicePort}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{loginServicePort}}",
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register a new user. Password must be 8-128 characters with at least one lowercase, one uppercase, one number, and one special character."
+          },
+          "response": []
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Status Code Tests",
+                  "pm.test('Status code is 200 OK', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Response Time Tests",
+                  "pm.test('Response time is acceptable (under 2000ms)', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "// Header Tests",
+                  "pm.test('Content-Type header is present', function() {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Set-Cookie header is present for refresh token', function() {",
+                  "    const setCookie = pm.response.headers.get('Set-Cookie');",
+                  "    if (setCookie) {",
+                  "        pm.expect(setCookie).to.be.a('string');",
+                  "    }",
+                  "});",
+                  "",
+                  "// Schema Validation",
+                  "pm.test('Response has valid JSON body', function() {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "",
+                  "// Required Fields Tests",
+                  "pm.test('Response contains access token', function() {",
+                  "    pm.expect(jsonData).to.have.property('accessToken');",
+                  "});",
+                  "",
+                  "// Data Type Tests",
+                  "pm.test('Access token is a string', function() {",
+                  "    pm.expect(jsonData.accessToken).to.be.a('string');",
+                  "});",
+                  "",
+                  "// Business Logic Tests - JWT Validation",
+                  "pm.test('Access token is valid JWT format', function() {",
+                  "    const jwtPattern = /^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$/;",
+                  "    pm.expect(jsonData.accessToken).to.match(jwtPattern);",
+                  "});",
+                  "",
+                  "pm.test('JWT has valid structure with 3 parts', function() {",
+                  "    const parts = jsonData.accessToken.split('.');",
+                  "    pm.expect(parts).to.have.lengthOf(3);",
+                  "});",
+                  "",
+                  "pm.test('JWT payload is decodable', function() {",
+                  "    const parts = jsonData.accessToken.split('.');",
+                  "    try {",
+                  "        const payload = JSON.parse(atob(parts[1]));",
+                  "        pm.expect(payload).to.be.an('object');",
+                  "    } catch (e) {",
+                  "        pm.expect.fail('JWT payload is not valid base64 JSON');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('JWT contains expiration claim', function() {",
+                  "    const parts = jsonData.accessToken.split('.');",
+                  "    const payload = JSON.parse(atob(parts[1]));",
+                  "    pm.expect(payload).to.have.property('exp');",
+                  "    pm.expect(payload.exp).to.be.a('number');",
+                  "});",
+                  "",
+                  "pm.test('JWT expiration is in the future', function() {",
+                  "    const parts = jsonData.accessToken.split('.');",
+                  "    const payload = JSON.parse(atob(parts[1]));",
+                  "    const now = Math.floor(Date.now() / 1000);",
+                  "    pm.expect(payload.exp).to.be.above(now);",
+                  "});",
+                  "",
+                  "pm.test('User data is present in response (if included)', function() {",
+                  "    if (jsonData.user) {",
+                  "        pm.expect(jsonData.user).to.be.an('object');",
+                  "        pm.expect(jsonData.user).to.have.property('email');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Password is not returned in response', function() {",
+                  "    pm.expect(jsonData.password).to.be.undefined;",
+                  "    if (jsonData.user) {",
+                  "        pm.expect(jsonData.user.password).to.be.undefined;",
+                  "    }",
+                  "});",
+                  "",
+                  "// Variable Extraction - Save tokens for subsequent requests",
+                  "pm.test('Save access token to collection variables', function() {",
+                  "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "    pm.expect(pm.collectionVariables.get('accessToken')).to.equal(jsonData.accessToken);",
+                  "});",
+                  "",
+                  "pm.test('Save refresh token if present in body', function() {",
+                  "    if (jsonData.refreshToken) {",
+                  "        pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Save user ID for subsequent requests', function() {",
+                  "    if (jsonData.user && jsonData.user.id) {",
+                  "        pm.collectionVariables.set('userId', jsonData.user.id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "f2fd11c4-bd4c-4885-8535-e4a1ff36e670",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}:{{loginServicePort}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{loginServicePort}}",
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login user and receive access token and refresh token (stored as HTTP-only cookie)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Status Code Tests",
+                  "pm.test('Status code is 200 OK', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Request is not unauthorized (401)', function() {",
+                  "    pm.response.to.not.have.status(401);",
+                  "});",
+                  "",
+                  "// Response Time Tests",
+                  "pm.test('Response time is acceptable (under 1000ms)', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "",
+                  "// Header Tests",
+                  "pm.test('Content-Type header is present', function() {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "// Schema Validation",
+                  "pm.test('Response has valid JSON body', function() {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "",
+                  "// Required Fields Tests",
+                  "pm.test('Response contains user object or user data', function() {",
+                  "    const hasUser = jsonData.hasOwnProperty('user') || jsonData.hasOwnProperty('email');",
+                  "    pm.expect(hasUser).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('User has email field', function() {",
+                  "    const email = jsonData.user ? jsonData.user.email : jsonData.email;",
+                  "    pm.expect(email).to.exist;",
+                  "});",
+                  "",
+                  "pm.test('User has ID field', function() {",
+                  "    const id = jsonData.user ? jsonData.user.id : jsonData.id;",
+                  "    pm.expect(id).to.exist;",
+                  "});",
+                  "",
+                  "// Data Type Tests",
+                  "pm.test('Email is a valid string', function() {",
+                  "    const email = jsonData.user ? jsonData.user.email : jsonData.email;",
+                  "    pm.expect(email).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('User ID is a valid string', function() {",
+                  "    const id = jsonData.user ? jsonData.user.id : jsonData.id;",
+                  "    pm.expect(id).to.be.a('string');",
+                  "});",
+                  "",
+                  "// Business Logic Tests",
+                  "pm.test('Email has valid format', function() {",
+                  "    const email = jsonData.user ? jsonData.user.email : jsonData.email;",
+                  "    const emailPattern = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;",
+                  "    pm.expect(email).to.match(emailPattern);",
+                  "});",
+                  "",
+                  "pm.test('Password is not exposed in response', function() {",
+                  "    pm.expect(jsonData.password).to.be.undefined;",
+                  "    if (jsonData.user) {",
+                  "        pm.expect(jsonData.user.password).to.be.undefined;",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Sensitive data is not exposed', function() {",
+                  "    pm.expect(jsonData.passwordHash).to.be.undefined;",
+                  "    pm.expect(jsonData.salt).to.be.undefined;",
+                  "    if (jsonData.user) {",
+                  "        pm.expect(jsonData.user.passwordHash).to.be.undefined;",
+                  "        pm.expect(jsonData.user.salt).to.be.undefined;",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Created date is valid (if present)', function() {",
+                  "    const createdAt = jsonData.user ? jsonData.user.createdAt : jsonData.createdAt;",
+                  "    if (createdAt) {",
+                  "        pm.expect(new Date(createdAt).toString()).to.not.equal('Invalid Date');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "3ef63698-ffaf-4932-a80b-6b1bebc44ccb",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}:{{loginServicePort}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{loginServicePort}}",
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Get the current user's profile information. Requires valid access token."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Status Code Tests",
+                  "pm.test('Status code is 200 OK', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Response Time Tests",
+                  "pm.test('Response time is acceptable (under 1500ms)', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1500);",
+                  "});",
+                  "",
+                  "// Header Tests",
+                  "pm.test('Content-Type header is present', function() {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "// Schema Validation",
+                  "pm.test('Response has valid JSON body', function() {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "",
+                  "// Required Fields Tests",
+                  "pm.test('Response contains new access token', function() {",
+                  "    pm.expect(jsonData).to.have.property('accessToken');",
+                  "});",
+                  "",
+                  "// Data Type Tests",
+                  "pm.test('Access token is a string', function() {",
+                  "    pm.expect(jsonData.accessToken).to.be.a('string');",
+                  "});",
+                  "",
+                  "// Business Logic Tests - JWT Validation",
+                  "pm.test('New access token is valid JWT format', function() {",
+                  "    const jwtPattern = /^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$/;",
+                  "    pm.expect(jsonData.accessToken).to.match(jwtPattern);",
+                  "});",
+                  "",
+                  "pm.test('New JWT has valid structure with 3 parts', function() {",
+                  "    const parts = jsonData.accessToken.split('.');",
+                  "    pm.expect(parts).to.have.lengthOf(3);",
+                  "});",
+                  "",
+                  "pm.test('New JWT payload is decodable', function() {",
+                  "    const parts = jsonData.accessToken.split('.');",
+                  "    try {",
+                  "        const payload = JSON.parse(atob(parts[1]));",
+                  "        pm.expect(payload).to.be.an('object');",
+                  "    } catch (e) {",
+                  "        pm.expect.fail('JWT payload is not valid base64 JSON');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('New JWT contains expiration claim', function() {",
+                  "    const parts = jsonData.accessToken.split('.');",
+                  "    const payload = JSON.parse(atob(parts[1]));",
+                  "    pm.expect(payload).to.have.property('exp');",
+                  "    pm.expect(payload.exp).to.be.a('number');",
+                  "});",
+                  "",
+                  "pm.test('New JWT expiration is in the future', function() {",
+                  "    const parts = jsonData.accessToken.split('.');",
+                  "    const payload = JSON.parse(atob(parts[1]));",
+                  "    const now = Math.floor(Date.now() / 1000);",
+                  "    pm.expect(payload.exp).to.be.above(now);",
+                  "});",
+                  "",
+                  "pm.test('New token is different from old token (token rotation)', function() {",
+                  "    const oldToken = pm.collectionVariables.get('accessToken');",
+                  "    if (oldToken && oldToken !== '') {",
+                  "        pm.expect(jsonData.accessToken).to.not.equal(oldToken);",
+                  "    }",
+                  "});",
+                  "",
+                  "// Variable Extraction - Update access token",
+                  "pm.test('Update access token in collection variables', function() {",
+                  "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "    pm.expect(pm.collectionVariables.get('accessToken')).to.equal(jsonData.accessToken);",
+                  "});",
+                  "",
+                  "pm.test('Update refresh token if rotated', function() {",
+                  "    if (jsonData.refreshToken) {",
+                  "        pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "867fb6f8-bbb1-4e7d-bea0-bef73b4a6ded",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}:{{loginServicePort}}/api/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{loginServicePort}}",
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Refresh the access token using the refresh token stored in HTTP-only cookie"
+          },
+          "response": []
+        }
+      ],
+      "id": "6251eb04-820c-4d39-aab0-eda51989d3a5",
+      "description": "Handles user authentication and token generation (Port 3001)"
+    },
+    {
+      "name": "Logout Service",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Status Code Tests",
+                  "pm.test('Status code is 200 OK', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Response Time Tests",
+                  "pm.test('Response time is acceptable (under 500ms)', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});",
+                  "",
+                  "// Header Tests",
+                  "pm.test('Content-Type header is present', function() {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "// Schema Validation",
+                  "pm.test('Response has valid JSON body', function() {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "",
+                  "// Required Fields Tests",
+                  "pm.test('Response contains status field', function() {",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "});",
+                  "",
+                  "// Data Type Tests",
+                  "pm.test('Status field is a string', function() {",
+                  "    pm.expect(jsonData.status).to.be.a('string');",
+                  "});",
+                  "",
+                  "// Business Logic Tests",
+                  "pm.test('Service status indicates healthy state', function() {",
+                  "    const validStatuses = ['ok', 'healthy', 'up', 'running'];",
+                  "    pm.expect(validStatuses).to.include(jsonData.status.toLowerCase());",
+                  "});",
+                  "",
+                  "pm.test('Uptime is present and valid (if exists)', function() {",
+                  "    if (jsonData.uptime !== undefined) {",
+                  "        pm.expect(jsonData.uptime).to.be.a('number');",
+                  "        pm.expect(jsonData.uptime).to.be.at.least(0);",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Timestamp is present and valid (if exists)', function() {",
+                  "    if (jsonData.timestamp !== undefined) {",
+                  "        pm.expect(jsonData.timestamp).to.be.a('string');",
+                  "        pm.expect(new Date(jsonData.timestamp).toString()).to.not.equal('Invalid Date');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "01a323bc-14d3-4d0f-aefc-ad44d3e21724",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}:{{logoutServicePort}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{logoutServicePort}}",
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Check if the Logout Service is healthy and running"
+          },
+          "response": []
+        },
+        {
+          "name": "Service Info",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Status Code Tests",
+                  "pm.test('Status code is 200 OK', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Response Time Tests",
+                  "pm.test('Response time is acceptable (under 500ms)', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});",
+                  "",
+                  "// Header Tests",
+                  "pm.test('Content-Type header is present', function() {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "// Schema Validation",
+                  "pm.test('Response has valid JSON body', function() {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "",
+                  "// Required Fields Tests",
+                  "pm.test('Response contains service name', function() {",
+                  "    pm.expect(jsonData).to.have.property('service');",
+                  "});",
+                  "",
+                  "pm.test('Response contains version information', function() {",
+                  "    pm.expect(jsonData).to.have.property('version');",
+                  "});",
+                  "",
+                  "// Data Type Tests",
+                  "pm.test('Service name is a string', function() {",
+                  "    pm.expect(jsonData.service).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('Version is a string', function() {",
+                  "    pm.expect(jsonData.version).to.be.a('string');",
+                  "});",
+                  "",
+                  "// Business Logic Tests",
+                  "pm.test('Service name indicates Logout Service', function() {",
+                  "    pm.expect(jsonData.service.toLowerCase()).to.include('logout');",
+                  "});",
+                  "",
+                  "pm.test('Version follows semantic versioning pattern', function() {",
+                  "    const semverPattern = /^\\\\d+\\\\.\\\\d+\\\\.\\\\d+/;",
+                  "    pm.expect(jsonData.version).to.match(semverPattern);",
+                  "});",
+                  "",
+                  "pm.test('Endpoints array is present (if exists)', function() {",
+                  "    if (jsonData.endpoints !== undefined) {",
+                  "        pm.expect(jsonData.endpoints).to.be.an('array');",
+                  "        pm.expect(jsonData.endpoints.length).to.be.at.least(1);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "67ae2c7b-045f-4824-a42a-85f7def35615",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}:{{logoutServicePort}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{logoutServicePort}}",
+              "path": [
+                ""
+              ]
+            },
+            "description": "Get information about the Logout Service and available endpoints"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Status Code Tests",
+                  "pm.test('Status code is 200 OK', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Request requires authentication (not 401 when token provided)', function() {",
+                  "    pm.response.to.not.have.status(401);",
+                  "});",
+                  "",
+                  "// Response Time Tests",
+                  "pm.test('Response time is acceptable (under 1000ms)', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "",
+                  "// Header Tests",
+                  "pm.test('Content-Type header is present', function() {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "// Schema Validation",
+                  "pm.test('Response has valid JSON body', function() {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "",
+                  "// Required Fields Tests",
+                  "pm.test('Response contains success indicator or message', function() {",
+                  "    const hasIndicator = jsonData.hasOwnProperty('success') || jsonData.hasOwnProperty('message');",
+                  "    pm.expect(hasIndicator).to.be.true;",
+                  "});",
+                  "",
+                  "// Data Type Tests",
+                  "pm.test('Success field is boolean (if present)', function() {",
+                  "    if (jsonData.success !== undefined) {",
+                  "        pm.expect(jsonData.success).to.be.a('boolean');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Message field is string (if present)', function() {",
+                  "    if (jsonData.message !== undefined) {",
+                  "        pm.expect(jsonData.message).to.be.a('string');",
+                  "    }",
+                  "});",
+                  "",
+                  "// Business Logic Tests",
+                  "pm.test('Logout was successful', function() {",
+                  "    if (jsonData.success !== undefined) {",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "    } else if (jsonData.message) {",
+                  "        pm.expect(jsonData.message.toLowerCase()).to.include('success');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Token should be invalidated after logout', function() {",
+                  "    // Note: The token used for this request should now be blacklisted",
+                  "    // Subsequent requests with this token should fail",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "// Variable Cleanup - Clear tokens after logout",
+                  "pm.test('Clear access token after successful logout', function() {",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.collectionVariables.set('accessToken', '');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "b5a869ff-df5c-4cd7-87c2-3ff28b73c780",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}:{{logoutServicePort}}/api/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{logoutServicePort}}",
+              "path": [
+                "api",
+                "logout"
+              ]
+            },
+            "description": "Logout user from current session. Blacklists the access token and removes refresh token."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout from All Devices",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Status Code Tests",
+                  "pm.test('Status code is 200 OK', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Request requires authentication (not 401 when token provided)', function() {",
+                  "    pm.response.to.not.have.status(401);",
+                  "});",
+                  "",
+                  "// Response Time Tests",
+                  "pm.test('Response time is acceptable (under 2000ms)', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "// Header Tests",
+                  "pm.test('Content-Type header is present', function() {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "// Schema Validation",
+                  "pm.test('Response has valid JSON body', function() {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "",
+                  "// Required Fields Tests",
+                  "pm.test('Response contains success indicator or message', function() {",
+                  "    const hasIndicator = jsonData.hasOwnProperty('success') || jsonData.hasOwnProperty('message');",
+                  "    pm.expect(hasIndicator).to.be.true;",
+                  "});",
+                  "",
+                  "// Data Type Tests",
+                  "pm.test('Success field is boolean (if present)', function() {",
+                  "    if (jsonData.success !== undefined) {",
+                  "        pm.expect(jsonData.success).to.be.a('boolean');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Message field is string (if present)', function() {",
+                  "    if (jsonData.message !== undefined) {",
+                  "        pm.expect(jsonData.message).to.be.a('string');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Sessions count is number (if present)', function() {",
+                  "    if (jsonData.sessionsInvalidated !== undefined) {",
+                  "        pm.expect(jsonData.sessionsInvalidated).to.be.a('number');",
+                  "        pm.expect(jsonData.sessionsInvalidated).to.be.at.least(0);",
+                  "    }",
+                  "});",
+                  "",
+                  "// Business Logic Tests",
+                  "pm.test('Logout from all devices was successful', function() {",
+                  "    if (jsonData.success !== undefined) {",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "    } else if (jsonData.message) {",
+                  "        pm.expect(jsonData.message.toLowerCase()).to.include('success');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('All sessions should be invalidated', function() {",
+                  "    // After this operation, all refresh tokens for the user should be invalid",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "// Variable Cleanup - Clear all tokens after logout-all",
+                  "pm.test('Clear all tokens after successful logout-all', function() {",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.collectionVariables.set('accessToken', '');",
+                  "        pm.collectionVariables.set('refreshToken', '');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "8dcaeb49-aade-40e4-8413-ac4744f9246b",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}:{{logoutServicePort}}/api/logout-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{logoutServicePort}}",
+              "path": [
+                "api",
+                "logout-all"
+              ]
+            },
+            "description": "Logout user from all devices by invalidating all refresh tokens"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalidate Specific Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Status Code Tests",
+                  "pm.test('Status code is 200 OK or 400 for invalid input', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});",
+                  "",
+                  "pm.test('Request requires authentication (not 401 when token provided)', function() {",
+                  "    pm.response.to.not.have.status(401);",
+                  "});",
+                  "",
+                  "// Response Time Tests",
+                  "pm.test('Response time is acceptable (under 1000ms)', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "",
+                  "// Header Tests",
+                  "pm.test('Content-Type header is present', function() {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "// Schema Validation",
+                  "pm.test('Response has valid JSON body', function() {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "",
+                  "// Required Fields Tests",
+                  "pm.test('Response contains success indicator or error message', function() {",
+                  "    const hasIndicator = jsonData.hasOwnProperty('success') || jsonData.hasOwnProperty('message') || jsonData.hasOwnProperty('error');",
+                  "    pm.expect(hasIndicator).to.be.true;",
+                  "});",
+                  "",
+                  "// Data Type Tests",
+                  "pm.test('Success field is boolean (if present)', function() {",
+                  "    if (jsonData.success !== undefined) {",
+                  "        pm.expect(jsonData.success).to.be.a('boolean');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Message field is string (if present)', function() {",
+                  "    if (jsonData.message !== undefined) {",
+                  "        pm.expect(jsonData.message).to.be.a('string');",
+                  "    }",
+                  "});",
+                  "",
+                  "// Business Logic Tests",
+                  "pm.test('Token type validation (access or refresh)', function() {",
+                  "    const requestBody = JSON.parse(pm.request.body.raw);",
+                  "    if (requestBody.tokenType) {",
+                  "        const validTypes = ['access', 'refresh'];",
+                  "        pm.expect(validTypes).to.include(requestBody.tokenType);",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Token format validation in request', function() {",
+                  "    const requestBody = JSON.parse(pm.request.body.raw);",
+                  "    if (requestBody.token && requestBody.token !== 'jwt_token_to_invalidate') {",
+                  "        // If a real token is provided, validate JWT format",
+                  "        const jwtPattern = /^[A-Za-z0-9-_]+\\\\.[A-Za-z0-9-_]+\\\\.[A-Za-z0-9-_]+$/;",
+                  "        pm.expect(requestBody.token).to.match(jwtPattern);",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Successful invalidation returns success response', function() {",
+                  "    if (pm.response.code === 200) {",
+                  "        if (jsonData.success !== undefined) {",
+                  "            pm.expect(jsonData.success).to.be.true;",
+                  "        }",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Invalid input returns appropriate error', function() {",
+                  "    if (pm.response.code === 400) {",
+                  "        pm.expect(jsonData.error || jsonData.message).to.exist;",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "5a1f86da-25f2-43be-b333-6fdc4db8dab3",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"jwt_token_to_invalidate\",\n  \"tokenType\": \"access\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}:{{logoutServicePort}}/api/invalidate-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{logoutServicePort}}",
+              "path": [
+                "api",
+                "invalidate-token"
+              ]
+            },
+            "description": "Manually invalidate a specific token. Token type must be 'access' or 'refresh'."
+          },
+          "response": []
+        },
+        {
+          "name": "Check Token Blacklist Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Status Code Tests",
+                  "pm.test('Status code is 200 OK or 404 for not found', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "// Response Time Tests",
+                  "pm.test('Response time is acceptable (under 500ms)', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});",
+                  "",
+                  "// Header Tests",
+                  "pm.test('Content-Type header is present', function() {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "// Schema Validation",
+                  "pm.test('Response has valid JSON body', function() {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "",
+                  "// Required Fields Tests",
+                  "pm.test('Response contains blacklisted status or error', function() {",
+                  "    const hasStatus = jsonData.hasOwnProperty('blacklisted') || jsonData.hasOwnProperty('isBlacklisted') || jsonData.hasOwnProperty('status');",
+                  "    const hasError = jsonData.hasOwnProperty('error') || jsonData.hasOwnProperty('message');",
+                  "    pm.expect(hasStatus || hasError).to.be.true;",
+                  "});",
+                  "",
+                  "// Data Type Tests",
+                  "pm.test('Blacklisted field is boolean (if present)', function() {",
+                  "    if (jsonData.blacklisted !== undefined) {",
+                  "        pm.expect(jsonData.blacklisted).to.be.a('boolean');",
+                  "    }",
+                  "    if (jsonData.isBlacklisted !== undefined) {",
+                  "        pm.expect(jsonData.isBlacklisted).to.be.a('boolean');",
+                  "    }",
+                  "});",
+                  "",
+                  "// Business Logic Tests",
+                  "pm.test('Response indicates token blacklist status', function() {",
+                  "    if (pm.response.code === 200) {",
+                  "        const isBlacklisted = jsonData.blacklisted || jsonData.isBlacklisted;",
+                  "        pm.expect(typeof isBlacklisted).to.equal('boolean');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Blacklist timestamp is valid (if present)', function() {",
+                  "    if (jsonData.blacklistedAt) {",
+                  "        pm.expect(new Date(jsonData.blacklistedAt).toString()).to.not.equal('Invalid Date');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Token expiry is valid (if present)', function() {",
+                  "    if (jsonData.expiresAt) {",
+                  "        pm.expect(new Date(jsonData.expiresAt).toString()).to.not.equal('Invalid Date');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "61ab7d59-a768-4671-b903-9f2a40cb1af9",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}:{{logoutServicePort}}/api/check-token/:token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{logoutServicePort}}",
+              "path": [
+                "api",
+                "check-token",
+                ":token"
+              ],
+              "variable": [
+                {
+                  "key": "token"
+                }
+              ]
+            },
+            "description": "Check if a token is blacklisted. Used for service-to-service communication."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Active Sessions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Status Code Tests",
+                  "pm.test('Status code is 200 OK', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Request requires authentication (not 401 when token provided)', function() {",
+                  "    pm.response.to.not.have.status(401);",
+                  "});",
+                  "",
+                  "// Response Time Tests",
+                  "pm.test('Response time is acceptable (under 1000ms)', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "",
+                  "// Header Tests",
+                  "pm.test('Content-Type header is present', function() {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "// Schema Validation",
+                  "pm.test('Response has valid JSON body', function() {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "",
+                  "// Required Fields Tests",
+                  "pm.test('Response contains sessions array', function() {",
+                  "    const hasSessions = jsonData.hasOwnProperty('sessions') || Array.isArray(jsonData);",
+                  "    pm.expect(hasSessions).to.be.true;",
+                  "});",
+                  "",
+                  "// Data Type Tests",
+                  "pm.test('Sessions is an array', function() {",
+                  "    const sessions = jsonData.sessions || jsonData;",
+                  "    pm.expect(sessions).to.be.an('array');",
+                  "});",
+                  "",
+                  "// Business Logic Tests - Validate session objects",
+                  "pm.test('Each session has required fields', function() {",
+                  "    const sessions = jsonData.sessions || jsonData;",
+                  "    sessions.forEach(function(session, index) {",
+                  "        pm.expect(session).to.be.an('object', 'Session ' + index + ' should be an object');",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('Session IDs are valid (if present)', function() {",
+                  "    const sessions = jsonData.sessions || jsonData;",
+                  "    sessions.forEach(function(session) {",
+                  "        if (session.id || session.sessionId) {",
+                  "            const id = session.id || session.sessionId;",
+                  "            pm.expect(id).to.be.a('string');",
+                  "        }",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('Session timestamps are valid (if present)', function() {",
+                  "    const sessions = jsonData.sessions || jsonData;",
+                  "    sessions.forEach(function(session) {",
+                  "        if (session.createdAt) {",
+                  "            pm.expect(new Date(session.createdAt).toString()).to.not.equal('Invalid Date');",
+                  "        }",
+                  "        if (session.lastActivity) {",
+                  "            pm.expect(new Date(session.lastActivity).toString()).to.not.equal('Invalid Date');",
+                  "        }",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('Session device info is valid (if present)', function() {",
+                  "    const sessions = jsonData.sessions || jsonData;",
+                  "    sessions.forEach(function(session) {",
+                  "        if (session.device) {",
+                  "            pm.expect(session.device).to.be.a('string');",
+                  "        }",
+                  "        if (session.userAgent) {",
+                  "            pm.expect(session.userAgent).to.be.a('string');",
+                  "        }",
+                  "        if (session.ipAddress) {",
+                  "            pm.expect(session.ipAddress).to.be.a('string');",
+                  "        }",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('Current session is marked (if applicable)', function() {",
+                  "    const sessions = jsonData.sessions || jsonData;",
+                  "    // At least one session should exist if user is authenticated",
+                  "    if (sessions.length > 0) {",
+                  "        const hasCurrentMarker = sessions.some(s => s.isCurrent === true || s.current === true);",
+                  "        // This is optional - some APIs don't mark current session",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "1ba8640c-61db-4858-919d-3910ea281636",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}:{{logoutServicePort}}/api/sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{logoutServicePort}}",
+              "path": [
+                "api",
+                "sessions"
+              ]
+            },
+            "description": "Get all active sessions for the current user"
+          },
+          "response": []
+        },
+        {
+          "name": "Cleanup Expired Tokens",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Status Code Tests",
+                  "pm.test('Status code is 200 OK or 202 Accepted', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 202]);",
+                  "});",
+                  "",
+                  "// Response Time Tests",
+                  "pm.test('Response time is acceptable (under 5000ms for cleanup operation)', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "// Header Tests",
+                  "pm.test('Content-Type header is present', function() {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "// Schema Validation",
+                  "pm.test('Response has valid JSON body', function() {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "",
+                  "// Required Fields Tests",
+                  "pm.test('Response contains success indicator or cleanup stats', function() {",
+                  "    const hasIndicator = jsonData.hasOwnProperty('success') || jsonData.hasOwnProperty('message') || jsonData.hasOwnProperty('cleaned') || jsonData.hasOwnProperty('deletedCount');",
+                  "    pm.expect(hasIndicator).to.be.true;",
+                  "});",
+                  "",
+                  "// Data Type Tests",
+                  "pm.test('Success field is boolean (if present)', function() {",
+                  "    if (jsonData.success !== undefined) {",
+                  "        pm.expect(jsonData.success).to.be.a('boolean');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Cleaned/deleted count is number (if present)', function() {",
+                  "    if (jsonData.cleaned !== undefined) {",
+                  "        pm.expect(jsonData.cleaned).to.be.a('number');",
+                  "        pm.expect(jsonData.cleaned).to.be.at.least(0);",
+                  "    }",
+                  "    if (jsonData.deletedCount !== undefined) {",
+                  "        pm.expect(jsonData.deletedCount).to.be.a('number');",
+                  "        pm.expect(jsonData.deletedCount).to.be.at.least(0);",
+                  "    }",
+                  "});",
+                  "",
+                  "// Business Logic Tests",
+                  "pm.test('Cleanup operation completed successfully', function() {",
+                  "    if (jsonData.success !== undefined) {",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "    } else {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([200, 202]);",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Cleanup timestamp is valid (if present)', function() {",
+                  "    if (jsonData.cleanedAt || jsonData.timestamp) {",
+                  "        const timestamp = jsonData.cleanedAt || jsonData.timestamp;",
+                  "        pm.expect(new Date(timestamp).toString()).to.not.equal('Invalid Date');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Next scheduled cleanup is valid (if present)', function() {",
+                  "    if (jsonData.nextCleanup) {",
+                  "        pm.expect(new Date(jsonData.nextCleanup).toString()).to.not.equal('Invalid Date');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "dcf9ce6d-8546-4bc7-a170-1be0cbe30167",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}:{{logoutServicePort}}/api/cleanup-tokens",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{logoutServicePort}}",
+              "path": [
+                "api",
+                "cleanup-tokens"
+              ]
+            },
+            "description": "Clean up expired blacklisted tokens. Maintenance endpoint for admin/service use."
+          },
+          "response": []
+        }
+      ],
+      "id": "066b8a40-8c6b-4cfd-b762-8e5a413eb7bd",
+      "description": "Manages token invalidation and session termination (Port 3002)"
+    },
+    {
+      "name": "Legacy Login Service (Deprecated)",
+      "item": [
+        {
+          "name": "Register User (Legacy)",
+          "id": "eb749a19-7cfa-4fba-8399-91578c4ec877",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}:{{loginServicePort}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{loginServicePort}}",
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Legacy register endpoint from monolithic service"
+          },
+          "response": []
+        },
+        {
+          "name": "Login User (Legacy)",
+          "id": "7153d3e5-1072-467a-8c0f-aebd7099cae3",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}:{{loginServicePort}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{loginServicePort}}",
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Legacy login endpoint from monolithic service"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout User (Legacy)",
+          "id": "93e50a0e-93cf-4865-9f9d-ea45724396ce",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}:{{loginServicePort}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{loginServicePort}}",
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Legacy logout endpoint from monolithic service"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout from All Devices (Legacy)",
+          "id": "d647197e-88bd-47e7-89f0-fe71c63c46aa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}:{{loginServicePort}}/api/auth/logout-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{loginServicePort}}",
+              "path": [
+                "api",
+                "auth",
+                "logout-all"
+              ]
+            },
+            "description": "Legacy logout-all endpoint from monolithic service"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Profile (Legacy)",
+          "id": "2160662e-48ef-432a-9133-c44f7fd96136",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}:{{loginServicePort}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{loginServicePort}}",
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Legacy profile endpoint from monolithic service"
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Access Token (Legacy)",
+          "id": "29255953-6859-4685-b5a9-e784babf0597",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}:{{loginServicePort}}/api/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "port": "{{loginServicePort}}",
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Legacy refresh token endpoint from monolithic service"
+          },
+          "response": []
+        }
+      ],
+      "id": "411446b4-0162-4e0f-90ca-f1d90d1d3c00",
+      "description": "Legacy endpoints from the old monolithic service structure"
+    }
+  ],
+  "variable": [
+    {
+      "id": "c76b57a6-1b8c-4d14-9b2b-e52c2a91b249",
+      "key": "baseUrl",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
+      "id": "ec1a90d4-280f-46c4-abbb-437ced5e7a82",
+      "key": "loginServicePort",
+      "value": "3001",
+      "type": "string"
+    },
+    {
+      "id": "231afdcd-efb1-43ec-8439-b323ce06bdd0",
+      "key": "logoutServicePort",
+      "value": "3002",
+      "type": "string"
+    },
+    {
+      "id": "9831c01b-6b6b-4005-9166-3122f8670570",
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "id": "a470849c-131e-4c83-97bf-3e057e27f7e2",
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
