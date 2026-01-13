@@ -1,0 +1,738 @@
+openapi: 3.0.0
+info:
+  title: Auth Service API
+  version: 1.0.0
+  description: |
+    A secure, production-ready authentication system built with a microservices architecture. 
+    The system is split into two specialized services:
+    - **Login Service** (port 3001): Handles user authentication and token generation
+    - **Logout Service** (port 3002): Manages token invalidation and session management
+    
+    ## Authentication
+    Most endpoints require Bearer token authentication using JWT access tokens.
+    
+    ## Token Management
+    - Access tokens are short-lived JWT tokens used for API authentication
+    - Refresh tokens are stored as HTTP-only cookies for security
+    - Tokens can be invalidated through the Logout Service
+
+servers:
+  - url: http://localhost:3001
+    description: Login Service
+  - url: http://localhost:3002
+    description: Logout Service
+
+tags:
+  - name: Login Service - Health
+    description: Health check and service information endpoints for Login Service
+  - name: Login Service - Authentication
+    description: User authentication and token management
+  - name: Logout Service - Health
+    description: Health check and service information endpoints for Logout Service
+  - name: Logout Service - Session Management
+    description: Token invalidation and session management
+
+paths:
+  /health:
+    get:
+      tags:
+        - Login Service - Health
+      summary: Health Check (Login Service)
+      description: Check if the Login Service is healthy and running
+      operationId: loginServiceHealthCheck
+      servers:
+        - url: http://localhost:3001
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: ok
+                uptime: 12345
+                timestamp: '2024-01-01T12:00:00Z'
+
+  /:
+    get:
+      tags:
+        - Login Service - Health
+      summary: Service Info (Login Service)
+      description: Get information about the Login Service and available endpoints
+      operationId: loginServiceInfo
+      servers:
+        - url: http://localhost:3001
+      responses:
+        '200':
+          description: Service information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceInfo'
+              example:
+                service: Login Service
+                version: 1.0.0
+                endpoints:
+                  - /health
+                  - /api/auth/register
+                  - /api/auth/login
+
+  /api/auth/register:
+    post:
+      tags:
+        - Login Service - Authentication
+      summary: Register User
+      description: |
+        Register a new user. Password must be 8-128 characters with at least one lowercase, 
+        one uppercase, one number, and one special character.
+      operationId: registerUser
+      servers:
+        - url: http://localhost:3001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: user@example.com
+              password: SecurePass123!
+      responses:
+        '200':
+          description: User registered successfully (with auto-login)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid input (e.g., weak password, invalid email)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/login:
+    post:
+      tags:
+        - Login Service - Authentication
+      summary: Login User
+      description: Login user and receive access token and refresh token (stored as HTTP-only cookie)
+      operationId: loginUser
+      servers:
+        - url: http://localhost:3001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: user@example.com
+              password: SecurePass123!
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            Set-Cookie:
+              description: HTTP-only cookie containing refresh token
+              schema:
+                type: string
+                example: refreshToken=eyJhbGc...; HttpOnly; Secure; SameSite=Strict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/me:
+    get:
+      tags:
+        - Login Service - Authentication
+      summary: Get User Profile
+      description: Get the current user's profile information. Requires valid access token.
+      operationId: getUserProfile
+      servers:
+        - url: http://localhost:3001
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - Login Service - Authentication
+      summary: Refresh Access Token
+      description: Refresh the access token using the refresh token stored in HTTP-only cookie
+      operationId: refreshAccessToken
+      servers:
+        - url: http://localhost:3001
+      responses:
+        '200':
+          description: New access token generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /logout-health:
+    get:
+      tags:
+        - Logout Service - Health
+      summary: Health Check (Logout Service)
+      description: Check if the Logout Service is healthy and running
+      operationId: logoutServiceHealthCheck
+      servers:
+        - url: http://localhost:3002
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /logout-info:
+    get:
+      tags:
+        - Logout Service - Health
+      summary: Service Info (Logout Service)
+      description: Get information about the Logout Service and available endpoints
+      operationId: logoutServiceInfo
+      servers:
+        - url: http://localhost:3002
+      responses:
+        '200':
+          description: Service information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceInfo'
+
+  /api/logout:
+    post:
+      tags:
+        - Logout Service - Session Management
+      summary: Logout User
+      description: Logout user from current session. Blacklists the access token and removes refresh token.
+      operationId: logoutUser
+      servers:
+        - url: http://localhost:3002
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResponse'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/logout-all:
+    post:
+      tags:
+        - Logout Service - Session Management
+      summary: Logout from All Devices
+      description: Logout user from all devices by invalidating all refresh tokens
+      operationId: logoutAllDevices
+      servers:
+        - url: http://localhost:3002
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logged out from all devices successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutAllResponse'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/invalidate-token:
+    post:
+      tags:
+        - Logout Service - Session Management
+      summary: Invalidate Specific Token
+      description: Manually invalidate a specific token. Token type must be 'access' or 'refresh'.
+      operationId: invalidateToken
+      servers:
+        - url: http://localhost:3002
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvalidateTokenRequest'
+            example:
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+              tokenType: access
+      responses:
+        '200':
+          description: Token invalidated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid input (e.g., invalid token format or type)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/check-token/{token}:
+    get:
+      tags:
+        - Logout Service - Session Management
+      summary: Check Token Blacklist Status
+      description: Check if a token is blacklisted. Used for service-to-service communication.
+      operationId: checkTokenBlacklist
+      servers:
+        - url: http://localhost:3002
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: JWT token to check
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$'
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Token status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenBlacklistStatus'
+        '404':
+          description: Token not found in blacklist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/sessions:
+    get:
+      tags:
+        - Logout Service - Session Management
+      summary: Get Active Sessions
+      description: Get all active sessions for the current user
+      operationId: getActiveSessions
+      servers:
+        - url: http://localhost:3002
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/cleanup-tokens:
+    post:
+      tags:
+        - Logout Service - Session Management
+      summary: Cleanup Expired Tokens
+      description: Clean up expired blacklisted tokens. Maintenance endpoint for admin/service use.
+      operationId: cleanupExpiredTokens
+      servers:
+        - url: http://localhost:3002
+      responses:
+        '200':
+          description: Cleanup completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleanupResponse'
+        '202':
+          description: Cleanup accepted and processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleanupResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token for authentication
+
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [ok, healthy, up, running]
+          description: Health status of the service
+        uptime:
+          type: number
+          description: Service uptime in seconds
+          minimum: 0
+        timestamp:
+          type: string
+          format: date-time
+          description: Current server timestamp
+
+    ServiceInfo:
+      type: object
+      required:
+        - service
+        - version
+      properties:
+        service:
+          type: string
+          description: Name of the service
+          example: Login Service
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+'
+          description: Service version (semantic versioning)
+          example: 1.0.0
+        endpoints:
+          type: array
+          items:
+            type: string
+          description: List of available endpoints
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          description: |
+            Password must be 8-128 characters with at least one lowercase, 
+            one uppercase, one number, and one special character
+          example: SecurePass123!
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          description: User password
+          example: SecurePass123!
+
+    AuthResponse:
+      type: object
+      required:
+        - accessToken
+      properties:
+        accessToken:
+          type: string
+          pattern: '^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$'
+          description: JWT access token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+        refreshToken:
+          type: string
+          description: Refresh token (may be in cookie instead)
+        user:
+          $ref: '#/components/schemas/User'
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: User ID
+        email:
+          type: string
+          format: email
+          description: User email
+        user:
+          $ref: '#/components/schemas/User'
+        message:
+          type: string
+          description: Success message
+
+    User:
+      type: object
+      required:
+        - id
+        - email
+      properties:
+        id:
+          type: string
+          description: Unique user identifier
+          example: 550e8400-e29b-41d4-a716-446655440000
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: user@example.com
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+
+    UserProfile:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        id:
+          type: string
+          description: User ID (if not nested in user object)
+        email:
+          type: string
+          format: email
+          description: User email (if not nested in user object)
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+
+    RefreshTokenResponse:
+      type: object
+      required:
+        - accessToken
+      properties:
+        accessToken:
+          type: string
+          pattern: '^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$'
+          description: New JWT access token
+        refreshToken:
+          type: string
+          description: New refresh token (if token rotation is enabled)
+
+    LogoutResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if logout was successful
+          example: true
+        message:
+          type: string
+          description: Success message
+          example: Logged out successfully
+
+    LogoutAllResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if logout from all devices was successful
+          example: true
+        message:
+          type: string
+          description: Success message
+        sessionsInvalidated:
+          type: integer
+          minimum: 0
+          description: Number of sessions invalidated
+
+    InvalidateTokenRequest:
+      type: object
+      required:
+        - token
+        - tokenType
+      properties:
+        token:
+          type: string
+          pattern: '^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$'
+          description: JWT token to invalidate
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        tokenType:
+          type: string
+          enum: [access, refresh]
+          description: Type of token to invalidate
+          example: access
+
+    TokenBlacklistStatus:
+      type: object
+      properties:
+        blacklisted:
+          type: boolean
+          description: Whether the token is blacklisted
+        isBlacklisted:
+          type: boolean
+          description: Alternative field name for blacklist status
+        status:
+          type: string
+          description: Token status
+        blacklistedAt:
+          type: string
+          format: date-time
+          description: When the token was blacklisted
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the token expires
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Session ID
+        sessionId:
+          type: string
+          description: Alternative session ID field
+        createdAt:
+          type: string
+          format: date-time
+          description: When the session was created
+        lastActivity:
+          type: string
+          format: date-time
+          description: Last activity timestamp
+        device:
+          type: string
+          description: Device information
+        userAgent:
+          type: string
+          description: User agent string
+        ipAddress:
+          type: string
+          description: IP address
+        isCurrent:
+          type: boolean
+          description: Whether this is the current session
+        current:
+          type: boolean
+          description: Alternative field for current session indicator
+
+    SessionsResponse:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Session'
+          description: List of active sessions
+
+    CleanupResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether cleanup was successful
+        message:
+          type: string
+          description: Status message
+        cleaned:
+          type: integer
+          minimum: 0
+          description: Number of tokens cleaned up
+        deletedCount:
+          type: integer
+          minimum: 0
+          description: Alternative field for cleanup count
+        cleanedAt:
+          type: string
+          format: date-time
+          description: When cleanup was performed
+        timestamp:
+          type: string
+          format: date-time
+          description: Alternative timestamp field
+        nextCleanup:
+          type: string
+          format: date-time
+          description: When next cleanup is scheduled
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Operation success indicator
+          example: true
+        message:
+          type: string
+          description: Success message
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        message:
+          type: string
+          description: Alternative error message field
+        details:
+          type: string
+          description: Additional error details

@@ -151,7 +151,7 @@ jobs:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
       - name: Lint API Specification
-        run: postman spec lint "postman/specs/User Permissions API.yaml"
+        run: postman spec lint "postman/specs/auth-service-api.yaml"
 
       - name: Stop services
         if: always()
