@@ -10,7 +10,7 @@ const cookieParser = require('cookie-parser');
 const { globalErrorHandler, notFound } = require('./src/middleware/errorHandler');
 
 // Import routes
-const loginRoutes = require('./src/routes/login');
+const loginRoutes = require('./src/routes/auth');
 
 const app = express();
 

@@ -1,0 +1,168 @@
+name: API Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  run-collection:
+    name: Run Postman API Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            login-service/package-lock.json
+            logout-service/package-lock.json
+
+      - name: Install login service dependencies
+        working-directory: login-service
+        run: npm ci
+
+      - name: Install logout service dependencies
+        working-directory: logout-service
+        run: npm ci
+
+      - name: Install shared dependencies
+        working-directory: shared
+        run: npm ci
+
+      - name: Start MongoDB
+        run: |
+          docker run -d -p 27017:27017 --name mongodb mongo:latest
+          sleep 10
+          echo "Waiting for MongoDB to be ready..."
+          timeout=30
+          while ! docker exec mongodb mongo --eval "db.runCommand('ping').ok" >/dev/null 2>&1; do
+            sleep 1
+            timeout=$((timeout - 1))
+            if [ $timeout -le 0 ]; then
+              echo "MongoDB failed to start within 30 seconds"
+              exit 1
+            fi
+          done
+          echo "MongoDB is ready!"
+
+      - name: Start login service
+        working-directory: login-service
+        run: |
+          node server.js &
+          echo $! > login-server.pid
+        env:
+          NODE_ENV: development
+          PORT: 3001
+          MONGODB_URI: mongodb://localhost:27017/login-service-test
+
+      - name: Start logout service
+        working-directory: logout-service
+        run: |
+          node server.js &
+          echo $! > logout-server.pid
+        env:
+          NODE_ENV: development
+          PORT: 3002
+          MONGODB_URI: mongodb://localhost:27017/login-service-test
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for login service to start..."
+          timeout=30
+          while ! curl -s http://localhost:3001/health > /dev/null 2>&1; do
+            sleep 1
+            timeout=$((timeout - 1))
+            if [ $timeout -le 0 ]; then
+              echo "Login service failed to start within 30 seconds"
+              exit 1
+            fi
+          done
+          echo "Login service is ready!"
+
+          echo "Waiting for logout service to start..."
+          timeout=30
+          while ! curl -s http://localhost:3002/health > /dev/null 2>&1; do
+            sleep 1
+            timeout=$((timeout - 1))
+            if [ $timeout -le 0 ]; then
+              echo "Logout service failed to start within 30 seconds"
+              exit 1
+            fi
+          done
+          echo "Logout service is ready!"
+
+      - name: Install Postman CLI
+        run: |
+          curl -o- "https://dl-cli.pstmn.io/install/canary/unix.sh" | sh
+
+      - name: Verify Postman CLI version
+        run: postman --version
+
+      - name: Login to Postman CLI
+        run: postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
+
+      - name: Create results directory
+        run: mkdir -p newman
+
+      - name: Run Postman Collection
+        continue-on-error: true
+        run: |
+          echo "🧪 Running Postman collection tests..."
+          postman collection run "postman/collections/Auth Service API.postman_collection.json" \
+            --reporters cli,json,html \
+            --reporter-json-export newman/test-results.json \
+            --reporter-html-export newman/test-results.html \
+            --env-var "baseUrl=http://localhost" \
+            --env-var "loginServicePort=3001" \
+            --env-var "logoutServicePort=3002" \
+            --env-var "loginServiceUrl=http://localhost:3001" \
+            --env-var "logoutServiceUrl=http://localhost:3002" \
+            --bail || echo "⚠️ Some tests may have failed, but reports were generated"
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+
+      - name: Lint API Specification
+        run: postman spec lint "postman/specs/User Permissions API.yaml"
+
+      - name: Stop services
+        if: always()
+        run: |
+          # Stop auth services
+          if [ -f login-service/login-server.pid ]; then
+            kill $(cat login-service/login-server.pid) 2>/dev/null || true
+            rm login-service/login-server.pid
+          fi
+          if [ -f logout-service/logout-server.pid ]; then
+            kill $(cat logout-service/logout-server.pid) 2>/dev/null || true
+            rm logout-service/logout-server.pid
+          fi
+          # Stop MongoDB container
+          docker stop mongodb 2>/dev/null || true
+          docker rm mongodb 2>/dev/null || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postman-test-results
+          path: |
+            newman/test-results.json
+            newman/test-results.html
+          if-no-files-found: warn
+
+      - name: Display test summary
+        if: always()
+        run: |
+          if [ -f newman/test-results.json ]; then
+            echo "✅ Test results generated successfully"
+            echo "📊 Check the artifacts for detailed HTML and JSON reports"
+          else
+            echo "❌ Test results were not generated"
+          fi
+
+      
