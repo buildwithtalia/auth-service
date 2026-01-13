@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+*/node_modules/
+shared/node_modules/
+
+# Runtime files
+logs/
+*.log
+*.pid
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+
+# Docker volumes
+mongodb_data/
+redis_data/
+
+# Symlinks (platform specific)
+*/shared_modules
+
+# Coverage and test reports
+coverage/
+nyc_output/
+.coverage
+*.cover
