@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wait-script
+  namespace: auth-system
+data:
+  wait-for-service.sh: |
+    #!/bin/bash
+    SERVICE_HOST=$1
+    SERVICE_PORT=$2
+    SERVICE_PATH=${3:-/health}
+    MAX_ATTEMPTS=${4:-30}
+    SLEEP_INTERVAL=${5:-2}
+
+    echo "Waiting for service at $SERVICE_HOST:$SERVICE_PORT$SERVICE_PATH"
+
+    attempt=0
+    while [ $attempt -lt $MAX_ATTEMPTS ]; do
+      if curl -f http://$SERVICE_HOST:$SERVICE_PORT$SERVICE_PATH >/dev/null 2>&1; then
+        echo "Service is ready!"
+        exit 0
+      fi
+
+      echo "Attempt $((attempt+1))/$MAX_ATTEMPTS: Service not ready, waiting..."
+      sleep $SLEEP_INTERVAL
+      attempt=$((attempt+1))
+    done
+
+    echo "Service failed to become ready after $MAX_ATTEMPTS attempts"
+    exit 1

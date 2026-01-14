@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: auth-system
+data:
+  NODE_ENV: "production"
+  JWT_EXPIRE: "24h"
+  JWT_REFRESH_EXPIRE: "7d"
+  BCRYPT_ROUNDS: "12"
+  RATE_LIMIT_WINDOW_MS: "900000"
+  RATE_LIMIT_MAX_REQUESTS_LOGIN: "5"
+  RATE_LIMIT_MAX_REQUESTS_LOGOUT: "10"
+  MONGODB_DATABASE: "login-service"

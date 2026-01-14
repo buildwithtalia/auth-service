@@ -1,18 +1,36 @@
-FROM node:16-alpine
+# Build stage
+FROM node:18-alpine AS builder
 
-# Create app directory
+# Install build dependencies for native modules
+RUN apk add --no-cache python3 make g++ curl
+
 WORKDIR /app
 
-# Install app dependencies
+# Copy package files
 COPY package*.json ./
-RUN npm install --only=production
 
-# Bundle app source
-COPY . .
+# Install dependencies and rebuild native modules
+RUN npm install --only=production && npm rebuild
+
+# Production stage
+FROM node:18-alpine
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+WORKDIR /app
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+
+# Copy built dependencies from builder stage
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copy application code
+COPY . .
+
+# Change ownership to non-root user
+RUN chown -R nextjs:nodejs /app
 USER nextjs
 
 # Expose port
