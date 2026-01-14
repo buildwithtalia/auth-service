@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: simple-logout-service
+  namespace: auth-system
+  labels:
+    app: simple-logout-service
+spec:
+  selector:
+    app: simple-logout-service
+  ports:
+  - port: 3002
+    targetPort: 3002
+    name: http
+  type: ClusterIP
