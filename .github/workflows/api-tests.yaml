@@ -137,7 +137,7 @@ jobs:
         continue-on-error: true
         run: |
           echo "🧪 Running Postman collection tests..."
-          echo "📁 Using local collection: postman/collections/Auth Service API.postman_collection.json"
+          echo "📁 Using local collection: 44848164-45b1e245-e286-48ce-8c1b-b0e3494df067"
           echo "🔧 Environment variables:"
           echo "  - baseUrl=http://localhost"
           echo "  - loginServicePort=3001"
@@ -146,7 +146,7 @@ jobs:
           echo "  - logoutServiceUrl=http://localhost:3002"
           echo ""
 
-          postman collection run "postman/collections/Auth Service API.postman_collection.json" --report-events \
+          postman collection run 44848164-45b1e245-e286-48ce-8c1b-b0e3494df067 --report-events \
             --reporters cli,json,html \
             --reporter-json-export newman/test-results.json \
             --reporter-html-export newman/test-results.html \
@@ -161,7 +161,7 @@ jobs:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
       - name: Lint API Specification
-        run: postman spec lint "postman/specs/auth-service-api.yaml"
+        run: postman spec lint 4df3ea20-dc89-44d1-b97d-58304012fd38
 
       - name: Stop services
         if: always()
