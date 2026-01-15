@@ -7,15 +7,84 @@ const axios = require('axios');
 
 const app = express();
 
+// Generate W3C Trace Context headers
+function generateTraceContext() {
+  // Generate 128-bit trace ID (32 hex characters)
+  const traceId = Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  // Generate 64-bit parent ID (16 hex characters)
+  const parentId = Array.from({length: 16}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  // Trace flags: 01 means sampled
+  const traceFlags = '01';
+
+  return {
+    traceparent: `00-${traceId}-${parentId}-${traceFlags}`,
+    traceId,
+    parentId
+  };
+}
+
+// Extract trace context from incoming request
+function extractTraceContext(req) {
+  const traceparent = req.headers.traceparent;
+  if (traceparent && traceparent.startsWith('00-')) {
+    const parts = traceparent.split('-');
+    if (parts.length === 4) {
+      return {
+        traceparent: traceparent,
+        traceId: parts[1],
+        parentId: parts[2],
+        traceFlags: parts[3]
+      };
+    }
+  }
+  // Generate new trace context if none found
+  return generateTraceContext();
+}
+
+// Generate child span for current request
+function generateChildSpan(traceContext) {
+  const childSpanId = Array.from({length: 16}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  return {
+    traceparent: `00-${traceContext.traceId}-${childSpanId}-01`,
+    traceId: traceContext.traceId,
+    parentId: traceContext.parentId,
+    spanId: childSpanId,
+    traceFlags: '01'
+  };
+}
+
 // Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const timestamp = new Date().toISOString();
 
+  // Extract or generate trace context
+  const traceContext = extractTraceContext(req);
+
+  // Generate child span for this request
+  const currentSpan = generateChildSpan(traceContext);
+  req.traceContext = currentSpan;
+
+  // Add traceparent to response headers
+  res.setHeader('traceparent', currentSpan.traceparent);
+
+  // Helper function to add trace context to JSON responses
+  const originalJson = res.json;
+  res.json = function(body) {
+    if (typeof body === 'object' && body !== null) {
+      body.trace = {
+        traceId: currentSpan.traceId,
+        spanId: currentSpan.spanId,
+        parentId: currentSpan.parentId
+      };
+    }
+    return originalJson.call(this, body);
+  };
+
   res.on('finish', () => {
     const duration = Date.now() - start;
     const statusColor = res.statusCode >= 400 ? '🔴' : '🟢';
-    console.log(`${statusColor} [${timestamp}] ${req.method} ${req.url} - ${res.statusCode} (${duration}ms)`);
+    console.log(`${statusColor} [${timestamp}] ${req.method} ${req.url} - ${res.statusCode} (${duration}ms) [trace:${currentSpan.traceId.substring(0, 8)}:${currentSpan.spanId.substring(0, 8)}]`);
   });
 
   next();
@@ -58,19 +127,32 @@ blacklistedTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 const BlacklistedToken = mongoose.model('BlacklistedToken', blacklistedTokenSchema);
 
 // Check login service dependency
-async function checkLoginServiceHealth() {
+async function checkLoginServiceHealth(traceContext) {
   try {
-    const response = await axios.get(`${LOGIN_SERVICE_URL}/health`, { timeout: 5000 });
+    // Generate child span ID for this outgoing request
+    const childSpanId = Array.from({length: 16}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    const childTraceparent = `00-${traceContext.traceId}-${childSpanId}-01`;
+
+    const response = await axios.get(`${LOGIN_SERVICE_URL}/health`, {
+      timeout: 5000,
+      headers: {
+        'traceparent': childTraceparent,
+        'tracestate': '',
+        'user-agent': 'logout-service/1.0.0'
+      }
+    });
+
+    console.log(`🔗 [trace:${traceContext.traceId.substring(0, 8)}] Outgoing request to login service: ${LOGIN_SERVICE_URL}/health`);
     return response.status === 200;
   } catch (error) {
-    console.log(`⚠️  Login service not available: ${error.message}`);
+    console.log(`⚠️  [trace:${traceContext.traceId.substring(0, 8)}] Login service not available: ${error.message}`);
     return false;
   }
 }
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
-  const loginServiceHealthy = await checkLoginServiceHealth();
+  const loginServiceHealthy = await checkLoginServiceHealth(req.traceContext);
 
   res.json({
     success: true,
@@ -266,7 +348,7 @@ app.post('/api/invalidate-token', async (req, res) => {
 
 // Service info endpoint
 app.get('/api/info', async (req, res) => {
-  const loginServiceHealthy = await checkLoginServiceHealth();
+  const loginServiceHealthy = await checkLoginServiceHealth(req.traceContext);
 
   res.json({
     service: 'logout-service',
