@@ -1360,7 +1360,6 @@
               ],
               "variable": [
                 {
-                  "id": "99f70270-92c1-49ee-b0fb-996bcf4b4813",
                   "key": "token"
                 }
               ]
@@ -1805,34 +1804,39 @@
   ],
   "variable": [
     {
-      "id": "c76b57a6-1b8c-4d14-9b2b-e52c2a91b249",
+      "id": "70aec290-e70e-41da-a81a-1864be987a2d",
       "key": "baseUrl",
       "value": "http://localhost",
       "type": "string"
     },
     {
-      "id": "ec1a90d4-280f-46c4-abbb-437ced5e7a82",
+      "id": "f93652f1-5fa7-4967-8419-a9f784adebf8",
       "key": "loginServicePort",
       "value": "3001",
       "type": "string"
     },
     {
-      "id": "231afdcd-efb1-43ec-8439-b323ce06bdd0",
+      "id": "6bebdd08-39e7-405d-a922-6c7c5df8f8e7",
       "key": "logoutServicePort",
       "value": "3002",
       "type": "string"
     },
     {
-      "id": "9831c01b-6b6b-4005-9166-3122f8670570",
+      "id": "94898578-b3d0-4976-9a93-fc32793c53ba",
       "key": "accessToken",
       "value": "",
       "type": "string"
     },
     {
-      "id": "a470849c-131e-4c83-97bf-3e057e27f7e2",
+      "id": "a677c1ee-8228-41a1-9fa4-9b34b8e14df1",
       "key": "refreshToken",
       "value": "",
       "type": "string"
+    },
+    {
+      "id": "4583de41-6c1f-484a-881b-890f1ed2eded",
+      "key": "userId",
+      "value": ""
     }
   ]
 }
