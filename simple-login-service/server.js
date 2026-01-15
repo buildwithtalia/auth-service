@@ -6,6 +6,20 @@ const helmet = require('helmet');
 
 const app = express();
 
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  const timestamp = new Date().toISOString();
+
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const statusColor = res.statusCode >= 400 ? '🔴' : '🟢';
+    console.log(`${statusColor} [${timestamp}] ${req.method} ${req.url} - ${res.statusCode} (${duration}ms)`);
+  });
+
+  next();
+});
+
 // Middleware
 app.use(helmet());
 app.use(cors());
