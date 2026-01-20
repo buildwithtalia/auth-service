@@ -1,0 +1,56 @@
+# CODEOWNERS file for auth-service repository
+# This file defines who owns different parts of the codebase and who can approve changes
+
+# Default owners for all files (fallback)
+* @talia.kohan@postman.com
+
+# GitHub workflows and CI/CD configuration
+.github/ @talia.kohan@postman.com
+.github/workflows/ @talia.kohan@postman.com
+
+# Root configuration files
+/*.yml @talia.kohan@postman.com
+/*.yaml @talia.kohan@postman.com
+/*.json @talia.kohan@postman.com
+/*.sh @talia.kohan@postman.com
+/*.js @talia.kohan@postman.com
+/docker-compose.yml @talia.kohan@postman.com
+/Dockerfile* @talia.kohan@postman.com
+/nginx.conf @talia.kohan@postman.com
+
+# Documentation
+/README.md @talia.kohan@postman.com
+/docs/ @talia.kohan@postman.com
+
+# Kubernetes configurations
+/k8s/ @talia.kohan@postman.com
+/k8s/services/ @talia.kohan@postman.com
+*.yaml @talia.kohan@postman.com
+
+# Authentication Services
+/login-service/ @talia.kohan@postman.com
+/logout-service/ @talia.kohan@postman.com
+/simple-login-service/ @talia.kohan@postman.com
+/simple-logout-service/ @talia.kohan@postman.com
+
+# Shared components
+/shared/ @talia.kohan@postman.com
+
+# API testing and documentation
+/postman/ @talia.kohan@postman.com
+/postman/collections/ @talia.kohan@postman.com
+/postman/specs/ @talia.kohan@postman.com
+
+# Security and environment files
+.env* @talia.kohan@postman.com
+/ssl/ @talia.kohan@postman.com
+
+# Package management
+package.json @talia.kohan@postman.com
+package-lock.json @talia.kohan@postman.com
+*/package.json @talia.kohan@postman.com
+*/package-lock.json @talia.kohan@postman.com
+
+# Infrastructure and deployment scripts
+/deploy-* @talia.kohan@postman.com
+*-daemonset.yaml @talia.kohan@postman.com
