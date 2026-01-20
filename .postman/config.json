@@ -7,6 +7,7 @@
     "environments": [],
     "specs": [],
     "flows": [],
-    "globals": []
+    "globals": [],
+    "mocks": []
   }
 }
