@@ -5,6 +5,16 @@ metadata:
   namespace: auth-system
   labels:
     app: simple-logout-service
+    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/component: logout
+    app.kubernetes.io/instance: simple-logout-service
+    service-type: authentication
+  annotations:
+    postman.com/service-type: logout
+    postman.com/api-version: v1
+    postman.com/related-services: simple-login-service
+    postman.com/depends-on: simple-login-service
+    postman.com/insights-enabled: "true"
 spec:
   selector:
     app: simple-logout-service
