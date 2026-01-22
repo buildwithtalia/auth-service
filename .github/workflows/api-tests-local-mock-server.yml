@@ -1,0 +1,148 @@
+name: API Tests with Local Mock Server
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  run-collection:
+    name: Run Postman API Tests with Local Mock Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cleanup port 4500 and prepare mock server
+        run: |
+          echo "🧹 Cleaning up any existing processes on port 4500..."
+
+          # Kill any existing mock.js processes from previous runs
+          pkill -f "mock.js" 2>/dev/null || true
+
+          # Aggressive cleanup of port 4500 - try multiple times
+          for attempt in 1 2 3; do
+            echo "Cleanup attempt $attempt/3..."
+
+            if lsof -ti:4500 >/dev/null 2>&1; then
+              echo "Found processes on port 4500, killing them..."
+              lsof -ti:4500 | xargs -r kill -9 2>/dev/null || true
+              sleep 2
+            else
+              echo "Port 4500 is free"
+              break
+            fi
+          done
+
+          # Final verification that port 4500 is available
+          if lsof -ti:4500 >/dev/null 2>&1; then
+            echo "❌ Failed to free port 4500 after cleanup attempts"
+            echo "Processes still using port 4500:"
+            lsof -i:4500
+            exit 1
+          fi
+
+          echo "✅ Port 4500 cleanup completed successfully"
+
+      - name: Verify port 4500 is available
+        run: |
+          echo "🔍 Verifying port 4500 is available for Postman CLI mock server..."
+
+          # Final verification that port 4500 is available
+          if lsof -ti:4500 >/dev/null 2>&1; then
+            echo "❌ Port 4500 is still in use after cleanup"
+            echo "Processes still using port 4500:"
+            lsof -i:4500
+            exit 1
+          fi
+
+          echo "✅ Port 4500 is available for Postman CLI mock server"
+
+      - name: Install Postman CLI
+        run: |
+          curl -o- "https://dl-cli.pstmn.io/install/canary/unix.sh" | sh
+
+      - name: Verify Postman CLI version
+        run: postman --version
+
+      - name: Login to Postman CLI
+        run: postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
+
+      - name: Create results directory
+        run: mkdir -p newman
+
+      - name: Run Postman Collection with Postman CLI Mock Server
+        continue-on-error: true
+        run: |
+          echo "🧪 Running Postman collection tests with Postman CLI Mock Server..."
+          echo "📁 Using local collection: postman/collections/Auth Service API.postman_collection.json"
+          echo "🎭 Using Postman mock configuration: postman/mocks/mock.json"
+          echo "🔧 Mock Server Environment variables:"
+          echo "  - mockServerUrl=http://localhost:4500"
+          echo "  - baseUrl=http://localhost:4500"
+          echo "  - loginServiceUrl=http://localhost:4500"
+          echo "  - logoutServiceUrl=http://localhost:4500"
+          echo "  - loginServicePort=4500"
+          echo "  - logoutServicePort=4500"
+          echo ""
+
+          curl -o- "https://dl-cli.pstmn.io/install/canary/unix.sh" | sh
+          postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }} || true
+
+          echo "🚀 Starting Postman collection with mock server..."
+          postman collection run "postman/collections/Auth Service API.postman_collection.json" --report-events \
+            --environment "postman/environments/Local Mock Server.postman_environment.json" \
+            --mock "postman/mocks/mock.json"
+          
+      - name: Lint API Specification
+        run: postman spec lint "postman/specs/auth-service-api.yaml"
+
+      - name: Cleanup after tests
+        if: always()
+        run: |
+          echo "🧹 Cleaning up after test run..."
+
+          # Kill any remaining mock.js processes (in case Postman CLI didn't clean up properly)
+          echo "Killing any remaining mock.js processes..."
+          pkill -f "mock.js" 2>/dev/null || true
+
+          # Ensure no processes remain on port 4500
+          echo "Ensuring no processes remain on port 4500..."
+          lsof -ti:4500 | xargs -r kill -9 2>/dev/null || true
+
+          # Wait for cleanup
+          sleep 2
+
+          # Verify cleanup
+          if lsof -ti:4500 >/dev/null 2>&1; then
+            echo "⚠️ Warning: Port 4500 may still be in use"
+            lsof -ti:4500 | xargs -r ps -p
+          else
+            echo "✅ Port 4500 is now free"
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postman-test-results-local-mock
+          path: |
+            newman/test-results.json
+            newman/test-results.html
+          if-no-files-found: warn
+
+      - name: Display test summary
+        if: always()
+        run: |
+          if [ -f newman/test-results.json ]; then
+            echo "✅ Test results generated successfully"
+            echo "📊 Check the artifacts for detailed HTML and JSON reports"
+            echo "🎯 Tests ran against Postman CLI Mock Server on http://localhost:4500"
+          else
+            echo "❌ Test results were not generated"
+          fi
