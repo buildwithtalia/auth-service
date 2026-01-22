@@ -1,4 +1,4 @@
-const { verifyAccessToken, extractTokenFromHeader } = require('../../../shared/utils/jwt');
+const { verifyAccessToken, extractTokenFromHeader } = require('../../../login-service/src/utils/jwt');
 const User = require('../../../shared/models/User');
 const BlacklistedToken = require('../models/BlacklistedToken');
 
