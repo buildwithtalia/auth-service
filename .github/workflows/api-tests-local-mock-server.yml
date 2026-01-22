@@ -18,44 +18,82 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Kill any existing processes on port 4500
+      - name: Cleanup port 4500 and prepare mock server
         run: |
           echo "🧹 Cleaning up any existing processes on port 4500..."
-          # Kill any existing processes on port 4500
-          lsof -ti:4500 | xargs -r kill -9 2>/dev/null || true
-          # Also kill any mock.js processes from previous runs
+
+          # Kill any existing mock.js processes from previous runs
           pkill -f "mock.js" 2>/dev/null || true
-          # Wait a moment for cleanup
-          sleep 2
-          echo "✅ Port 4500 cleanup completed"
+
+          # Aggressive cleanup of port 4500 - try multiple times
+          for attempt in 1 2 3; do
+            echo "Cleanup attempt $attempt/3..."
+
+            if lsof -ti:4500 >/dev/null 2>&1; then
+              echo "Found processes on port 4500, killing them..."
+              lsof -ti:4500 | xargs -r kill -9 2>/dev/null || true
+              sleep 2
+            else
+              echo "Port 4500 is free"
+              break
+            fi
+          done
+
+          # Final verification that port 4500 is available
+          if lsof -ti:4500 >/dev/null 2>&1; then
+            echo "❌ Failed to free port 4500 after cleanup attempts"
+            echo "Processes still using port 4500:"
+            lsof -i:4500
+            exit 1
+          fi
+
+          echo "✅ Port 4500 cleanup completed successfully"
 
       - name: Start Local Mock Server
         run: |
           echo "🚀 Starting Auth Service Local Mock Server on port 4500..."
-          node postman/mocks/mock.js &
-          echo $! > mock-server.pid
 
-          echo "Mock Server PID: $(cat mock-server.pid)"
+          # Double-check the port is available
+          if lsof -ti:4500 >/dev/null 2>&1; then
+            echo "❌ Port 4500 is still in use after cleanup"
+            echo "Processes on port 4500:"
+            lsof -ti:4500 | xargs -r ps -p
+            exit 1
+          fi
+
+          # Start the mock server
+          node postman/mocks/mock.js &
+          MOCK_PID=$!
+          echo $MOCK_PID > mock-server.pid
+
+          echo "Mock Server PID: $MOCK_PID"
+          echo "Mock Server Port: 4500"
           echo "Waiting for mock server to start..."
-          sleep 3
+          sleep 5
         env:
           PORT: 4500
 
       - name: Wait for Mock Server to be ready
         run: |
-          echo "Waiting for mock server to start..."
-          timeout=30
+          echo "Waiting for mock server to start on port 4500..."
+          timeout=60
           while ! curl -s http://localhost:4500/health > /dev/null 2>&1; do
             sleep 1
             timeout=$((timeout - 1))
             if [ $timeout -le 0 ]; then
-              echo "❌ Mock server failed to start within 30 seconds"
+              echo "❌ Mock server failed to start within 60 seconds"
               echo "Mock server logs:"
-              ps aux | grep mock || echo "No mock process found"
+              if [ -f mock-server.pid ]; then
+                ps -p $(cat mock-server.pid) || echo "Mock server process not found"
+              fi
+              echo "Port status:"
+              lsof -ti:4500 || echo "No process found on port 4500"
+              echo "All node processes:"
+              ps aux | grep node || echo "No node processes found"
               exit 1
             fi
           done
-          echo "✅ Mock server is ready!"
+          echo "✅ Mock server is ready on port 4500!"
 
           # Test mock server endpoints
           echo "🧪 Testing mock server endpoints..."
@@ -107,12 +145,13 @@ jobs:
           # First try to kill using PID file
           if [ -f mock-server.pid ]; then
             echo "Killing mock server using PID file..."
-            kill $(cat mock-server.pid) 2>/dev/null || true
+            MOCK_PID=$(cat mock-server.pid)
+            kill $MOCK_PID 2>/dev/null || kill -9 $MOCK_PID 2>/dev/null || true
             rm mock-server.pid
             echo "✅ Mock server stopped via PID file"
           fi
 
-          # Also kill any processes on port 4500 to ensure cleanup
+          # Ensure no processes remain on port 4500
           echo "Ensuring no processes remain on port 4500..."
           lsof -ti:4500 | xargs -r kill -9 2>/dev/null || true
 
@@ -121,11 +160,12 @@ jobs:
           pkill -f "mock.js" 2>/dev/null || true
 
           # Wait for cleanup
-          sleep 2
+          sleep 3
 
-          # Verify port is free
+          # Verify cleanup
           if lsof -ti:4500 >/dev/null 2>&1; then
             echo "⚠️ Warning: Port 4500 may still be in use"
+            lsof -ti:4500 | xargs -r ps -p
           else
             echo "✅ Port 4500 is now free"
           fi
