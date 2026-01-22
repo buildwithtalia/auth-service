@@ -131,8 +131,7 @@ jobs:
           curl -o- "https://dl-cli.pstmn.io/install/canary/unix.sh" | sh
           postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }} || true
           postman collection run "postman/collections/Auth Service API.postman_collection.json" --report-events \
-            --environment "postman/environments/Local Mock Server.postman_environment.json" \
-            --mock "postman/mocks/mock.json"
+            --environment "postman/environments/Local Mock Server.postman_environment.json"
           
       - name: Lint API Specification
         run: postman spec lint "postman/specs/auth-service-api.yaml"
