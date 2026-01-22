@@ -8,8 +8,8 @@ kubectl apply -f postman-insights-agent-daemonset.yaml
 
 # Apply updated service configurations with enhanced metadata
 echo "🔧 Applying updated service configurations..."
-kubectl apply -f k8s/services/simple-login-service.yaml
-kubectl apply -f k8s/services/simple-logout-service.yaml
+kubectl apply -f k8s/services/login-deployment.yaml
+kubectl apply -f k8s/services/logout-deployment.yaml
 
 # Wait for insights agent to restart
 echo "⏳ Waiting for insights agent to restart..."
@@ -19,10 +19,10 @@ kubectl rollout status daemonset/postman-insights-agent -n postman-insights-name
 # Check that both services are properly labeled
 echo "🏷️  Checking service labels and annotations..."
 echo "Login Service:"
-kubectl get service simple-login-service -n auth-system -o yaml | grep -A 20 "metadata:"
+kubectl get service login-service -n auth-system -o yaml | grep -A 20 "metadata:"
 echo ""
 echo "Logout Service:"
-kubectl get service simple-logout-service -n auth-system -o yaml | grep -A 20 "metadata:"
+kubectl get service logout-service -n auth-system -o yaml | grep -A 20 "metadata:"
 
 # Check insights agent status
 echo "🔍 Checking insights agent status..."
@@ -39,7 +39,7 @@ echo "🔗 Next Steps:"
 echo "1. Wait 2-3 minutes for the agent to rediscover services"
 echo "2. Check your Postman workspace at: https://go.postman.co/workspace"
 echo "3. Navigate to: APIs > Insights > Service Map for project: svc_69DlVp7BRWhfyRRpS8fcCU"
-echo "4. You should now see both 'simple-login-service' and 'simple-logout-service' in the graph"
+echo "4. You should now see both 'login-service' and 'logout-service' in the graph"
 echo ""
 echo "🔧 If services still don't appear:"
 echo "- Check agent logs: kubectl logs -n postman-insights-namespace -l name=postman-insights-agent"

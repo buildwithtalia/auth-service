@@ -18,7 +18,7 @@ spec:
         pathType: ImplementationSpecific
         backend:
           service:
-            name: simple-login-service
+            name: login-service
             port:
               number: 3001
       # Logout service - strip /logout prefix
@@ -26,6 +26,6 @@ spec:
         pathType: ImplementationSpecific
         backend:
           service:
-            name: simple-logout-service
+            name: logout-service
             port:
               number: 3002

@@ -7,32 +7,7 @@ const { authenticateToken, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Rate limiting for logout endpoints
-const logoutLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 logout attempts per window
-  message: {
-    success: false,
-    message: 'Too many logout attempts, please try again later',
-    error: 'LOGOUT_RATE_LIMIT_EXCEEDED'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: false
-});
-
-// Rate limiting for admin/service endpoints
-const adminLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 100, // 100 requests per hour for admin endpoints
-  message: {
-    success: false,
-    message: 'Too many admin requests, please try again later',
-    error: 'ADMIN_RATE_LIMIT_EXCEEDED'
-  },
-  standardHeaders: true,
-  legacyHeaders: false
-});
+// All rate limiting removed for unlimited requests
 
 // Validation rules
 const invalidateTokenValidation = [
@@ -63,7 +38,6 @@ const tokenParamValidation = [
  * @access  Private
  */
 router.post('/logout',
-  logoutLimiter,
   optionalAuth, // Optional because even invalid tokens should be able to logout
   logoutController.logout
 );
@@ -74,7 +48,6 @@ router.post('/logout',
  * @access  Private
  */
 router.post('/logout-all',
-  logoutLimiter,
   authenticateToken,
   logoutController.logoutAll
 );
@@ -85,7 +58,6 @@ router.post('/logout-all',
  * @access  Private
  */
 router.post('/invalidate-token',
-  logoutLimiter,
   authenticateToken,
   invalidateTokenValidation,
   logoutController.invalidateToken
@@ -97,7 +69,6 @@ router.post('/invalidate-token',
  * @access  Private (should be protected by API key in production)
  */
 router.get('/check-token/:token',
-  adminLimiter,
   tokenParamValidation,
   logoutController.checkToken
 );
@@ -118,7 +89,6 @@ router.get('/sessions',
  * @access  Private (Admin/Service)
  */
 router.post('/cleanup-tokens',
-  adminLimiter,
   // In production, this should require admin authentication or API key
   logoutController.cleanupTokens
 );

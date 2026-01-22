@@ -30,8 +30,6 @@
 # Authentication Services
 /login-service/ @talia.kohan@postman.com
 /logout-service/ @talia.kohan@postman.com
-/simple-login-service/ @talia.kohan@postman.com
-/simple-logout-service/ @talia.kohan@postman.com
 
 # Shared components
 /shared/ @talia.kohan@postman.com
