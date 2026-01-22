@@ -1,0 +1,126 @@
+name: API Tests with Local Mock Server
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  run-collection:
+    name: Run Postman API Tests with Local Mock Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Start Local Mock Server
+        run: |
+          echo "🚀 Starting Auth Service Local Mock Server on port 4500..."
+          node postman/mocks/mock.js &
+          echo $! > mock-server.pid
+
+          echo "Mock Server PID: $(cat mock-server.pid)"
+          echo "Waiting for mock server to start..."
+          sleep 3
+        env:
+          PORT: 4500
+
+      - name: Wait for Mock Server to be ready
+        run: |
+          echo "Waiting for mock server to start..."
+          timeout=30
+          while ! curl -s http://localhost:4500/health > /dev/null 2>&1; do
+            sleep 1
+            timeout=$((timeout - 1))
+            if [ $timeout -le 0 ]; then
+              echo "❌ Mock server failed to start within 30 seconds"
+              echo "Mock server logs:"
+              ps aux | grep mock || echo "No mock process found"
+              exit 1
+            fi
+          done
+          echo "✅ Mock server is ready!"
+
+          # Test mock server endpoints
+          echo "🧪 Testing mock server endpoints..."
+          echo "Health check response:"
+          curl -s http://localhost:4500/health | head -c 200
+          echo ""
+
+      - name: Install Postman CLI
+        run: |
+          curl -o- "https://dl-cli.pstmn.io/install/canary/unix.sh" | sh
+
+      - name: Verify Postman CLI version
+        run: postman --version
+
+      - name: Login to Postman CLI
+        run: postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
+
+      - name: Create results directory
+        run: mkdir -p newman
+
+      - name: Run Postman Collection with Local Mock Server
+        continue-on-error: true
+        run: |
+          echo "🧪 Running Postman collection tests against Local Mock Server..."
+          echo "📁 Using local collection: postman/collections/Auth Service API.postman_collection.json"
+          echo "🔧 Local Mock Server Environment variables:"
+          echo "  - mockServerUrl=http://localhost:4500"
+          echo "  - baseUrl=http://localhost:4500"
+          echo "  - loginServiceUrl=http://localhost:4500"
+          echo "  - logoutServiceUrl=http://localhost:4500"
+          echo "  - loginServicePort=4500"
+          echo "  - logoutServicePort=4500"
+          echo ""
+
+          
+      - name: Run Postman Collection with Local Mock Server
+        run: |
+          curl -o- "https://dl-cli.pstmn.io/install/canary/unix.sh" | sh
+          postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }} || true
+          postman collection run "postman/collections/Auth Service API.postman_collection.json" --report-events \
+            --environment "postman/environments/Local Mock Server.postman_environment.json" \
+            --mock "postman/mocks/mock.json"
+          
+      - name: Lint API Specification
+        run: postman spec lint "postman/specs/auth-service-api.yaml"
+
+      - name: Stop Mock Server
+        if: always()
+        run: |
+          echo "🛑 Stopping Mock Server..."
+          if [ -f mock-server.pid ]; then
+            kill $(cat mock-server.pid) 2>/dev/null || true
+            rm mock-server.pid
+            echo "✅ Mock server stopped"
+          else
+            echo "⚠️ Mock server PID file not found, trying to find and kill process..."
+            pkill -f "mock.js" || echo "No mock process found to kill"
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postman-test-results-local-mock
+          path: |
+            newman/test-results.json
+            newman/test-results.html
+          if-no-files-found: warn
+
+      - name: Display test summary
+        if: always()
+        run: |
+          if [ -f newman/test-results.json ]; then
+            echo "✅ Test results generated successfully"
+            echo "📊 Check the artifacts for detailed HTML and JSON reports"
+            echo "🎯 Tests ran against Local Mock Server on http://localhost:4500"
+          else
+            echo "❌ Test results were not generated"
+          fi
