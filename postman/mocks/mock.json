@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "name": "Local Mock",
+  "protocol": "http",
+  "port": 4500,
+  "mockSrc": "./mock.js",
+  "routes": [],
+  "autoRestartOnChange": true,
+  "logging": {
+    "level": "verbose",
+    "showBody": true
+  }
+}
