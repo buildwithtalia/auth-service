@@ -49,57 +49,19 @@ jobs:
 
           echo "✅ Port 4500 cleanup completed successfully"
 
-      - name: Start Local Mock Server
+      - name: Verify port 4500 is available
         run: |
-          echo "🚀 Starting Auth Service Local Mock Server on port 4500..."
+          echo "🔍 Verifying port 4500 is available for Postman CLI mock server..."
 
-          # Double-check the port is available
+          # Final verification that port 4500 is available
           if lsof -ti:4500 >/dev/null 2>&1; then
             echo "❌ Port 4500 is still in use after cleanup"
-            echo "Processes on port 4500:"
-            lsof -ti:4500 | xargs -r ps -p
+            echo "Processes still using port 4500:"
+            lsof -i:4500
             exit 1
           fi
 
-          # Start the mock server
-          node postman/mocks/mock.js &
-          MOCK_PID=$!
-          echo $MOCK_PID > mock-server.pid
-
-          echo "Mock Server PID: $MOCK_PID"
-          echo "Mock Server Port: 4500"
-          echo "Waiting for mock server to start..."
-          sleep 5
-        env:
-          PORT: 4500
-
-      - name: Wait for Mock Server to be ready
-        run: |
-          echo "Waiting for mock server to start on port 4500..."
-          timeout=60
-          while ! curl -s http://localhost:4500/health > /dev/null 2>&1; do
-            sleep 1
-            timeout=$((timeout - 1))
-            if [ $timeout -le 0 ]; then
-              echo "❌ Mock server failed to start within 60 seconds"
-              echo "Mock server logs:"
-              if [ -f mock-server.pid ]; then
-                ps -p $(cat mock-server.pid) || echo "Mock server process not found"
-              fi
-              echo "Port status:"
-              lsof -ti:4500 || echo "No process found on port 4500"
-              echo "All node processes:"
-              ps aux | grep node || echo "No node processes found"
-              exit 1
-            fi
-          done
-          echo "✅ Mock server is ready on port 4500!"
-
-          # Test mock server endpoints
-          echo "🧪 Testing mock server endpoints..."
-          echo "Health check response:"
-          curl -s http://localhost:4500/health | head -c 200
-          echo ""
+          echo "✅ Port 4500 is available for Postman CLI mock server"
 
       - name: Install Postman CLI
         run: |
@@ -114,12 +76,13 @@ jobs:
       - name: Create results directory
         run: mkdir -p newman
 
-      - name: Run Postman Collection with Local Mock Server
+      - name: Run Postman Collection with Postman CLI Mock Server
         continue-on-error: true
         run: |
-          echo "🧪 Running Postman collection tests against Local Mock Server..."
+          echo "🧪 Running Postman collection tests with Postman CLI Mock Server..."
           echo "📁 Using local collection: postman/collections/Auth Service API.postman_collection.json"
-          echo "🔧 Local Mock Server Environment variables:"
+          echo "🎭 Using Postman mock configuration: postman/mocks/mock.json"
+          echo "🔧 Mock Server Environment variables:"
           echo "  - mockServerUrl=http://localhost:4500"
           echo "  - baseUrl=http://localhost:4500"
           echo "  - loginServiceUrl=http://localhost:4500"
@@ -130,36 +93,30 @@ jobs:
 
           curl -o- "https://dl-cli.pstmn.io/install/canary/unix.sh" | sh
           postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }} || true
+
+          echo "🚀 Starting Postman collection with mock server..."
           postman collection run "postman/collections/Auth Service API.postman_collection.json" --report-events \
-            --environment "postman/environments/Local Mock Server.postman_environment.json"
+            --environment "postman/environments/Local Mock Server.postman_environment.json" \
+            --mock "postman/mocks/mock.json"
           
       - name: Lint API Specification
         run: postman spec lint "postman/specs/auth-service-api.yaml"
 
-      - name: Stop Mock Server
+      - name: Cleanup after tests
         if: always()
         run: |
-          echo "🛑 Stopping Mock Server..."
+          echo "🧹 Cleaning up after test run..."
 
-          # First try to kill using PID file
-          if [ -f mock-server.pid ]; then
-            echo "Killing mock server using PID file..."
-            MOCK_PID=$(cat mock-server.pid)
-            kill $MOCK_PID 2>/dev/null || kill -9 $MOCK_PID 2>/dev/null || true
-            rm mock-server.pid
-            echo "✅ Mock server stopped via PID file"
-          fi
+          # Kill any remaining mock.js processes (in case Postman CLI didn't clean up properly)
+          echo "Killing any remaining mock.js processes..."
+          pkill -f "mock.js" 2>/dev/null || true
 
           # Ensure no processes remain on port 4500
           echo "Ensuring no processes remain on port 4500..."
           lsof -ti:4500 | xargs -r kill -9 2>/dev/null || true
 
-          # Kill any mock.js processes
-          echo "Killing any remaining mock.js processes..."
-          pkill -f "mock.js" 2>/dev/null || true
-
           # Wait for cleanup
-          sleep 3
+          sleep 2
 
           # Verify cleanup
           if lsof -ti:4500 >/dev/null 2>&1; then
@@ -185,7 +142,7 @@ jobs:
           if [ -f newman/test-results.json ]; then
             echo "✅ Test results generated successfully"
             echo "📊 Check the artifacts for detailed HTML and JSON reports"
-            echo "🎯 Tests ran against Local Mock Server on http://localhost:4500"
+            echo "🎯 Tests ran against Postman CLI Mock Server on http://localhost:4500"
           else
             echo "❌ Test results were not generated"
           fi
