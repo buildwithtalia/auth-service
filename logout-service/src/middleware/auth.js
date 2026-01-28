@@ -1,5 +1,5 @@
-const { verifyAccessToken, extractTokenFromHeader } = require('../../../login-service/src/utils/jwt');
-const User = require('../../../shared/models/User');
+const { verifyAccessToken, extractTokenFromHeader } = require('../../../shared/utils/jwt');
+const User = require('../models/User');
 const BlacklistedToken = require('../models/BlacklistedToken');
 
 /**
@@ -49,9 +49,12 @@ const authenticateToken = async (req, res, next) => {
     }
 
     // Find the user
-    const user = await User.findById(decoded.userId);
+    const mongoose = require('mongoose');
+    const user = await User.findById(new mongoose.Types.ObjectId(decoded.userId));
 
-    if (!user) {
+    const finalUser = user;
+
+    if (!finalUser) {
       return res.status(401).json({
         success: false,
         message: 'User not found',
@@ -59,7 +62,7 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    if (!user.isActive) {
+    if (!finalUser.isActive) {
       return res.status(401).json({
         success: false,
         message: 'User account is deactivated',
@@ -69,11 +72,11 @@ const authenticateToken = async (req, res, next) => {
 
     // Attach user to request object
     req.user = {
-      id: user._id,
-      email: user.email,
-      isActive: user.isActive,
-      lastLogin: user.lastLogin,
-      createdAt: user.createdAt
+      id: finalUser._id,
+      email: finalUser.email,
+      isActive: finalUser.isActive,
+      lastLogin: finalUser.lastLogin,
+      createdAt: finalUser.createdAt
     };
 
     next();
