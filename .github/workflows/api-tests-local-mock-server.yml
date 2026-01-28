@@ -1,4 +1,4 @@
-name: API Tests with Local Mock Server
+name: API Tests with Login and Logout Services
 
 on:
   pull_request:
@@ -6,8 +6,22 @@ on:
 
 jobs:
   run-collection:
-    name: Run Postman API Tests with Local Mock Server
+    name: Run Postman API Tests with Login and Logout Services
     runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:5.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password123
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'quit(db.runCommand({ ping: 1 }).ok ? 0 : 2)' --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout repository
@@ -18,50 +32,144 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Cleanup port 4500 and prepare mock server
+      - name: Cleanup ports 3001 and 3002
         run: |
-          echo "🧹 Cleaning up any existing processes on port 4500..."
+          echo "🧹 Cleaning up any existing processes on ports 3001 and 3002..."
 
-          # Kill any existing mock.js processes from previous runs
-          pkill -f "mock.js" 2>/dev/null || true
+          # Kill any existing Node.js server processes from previous runs
+          pkill -f "login-service" 2>/dev/null || true
+          pkill -f "logout-service" 2>/dev/null || true
 
-          # Aggressive cleanup of port 4500 - try multiple times
-          for attempt in 1 2 3; do
-            echo "Cleanup attempt $attempt/3..."
-
-            if lsof -ti:4500 >/dev/null 2>&1; then
-              echo "Found processes on port 4500, killing them..."
-              lsof -ti:4500 | xargs -r kill -9 2>/dev/null || true
-              sleep 2
-            else
-              echo "Port 4500 is free"
-              break
+          # Aggressive cleanup of ports 3001 and 3002
+          for port in 3001 3002; do
+            echo "Cleaning up port $port..."
+            if lsof -ti:$port >/dev/null 2>&1; then
+              echo "Found processes on port $port, killing them..."
+              lsof -ti:$port | xargs -r kill -9 2>/dev/null || true
             fi
           done
 
-          # Final verification that port 4500 is available
-          if lsof -ti:4500 >/dev/null 2>&1; then
-            echo "❌ Failed to free port 4500 after cleanup attempts"
-            echo "Processes still using port 4500:"
-            lsof -i:4500
-            exit 1
-          fi
+          # Wait for cleanup
+          sleep 2
 
-          echo "✅ Port 4500 cleanup completed successfully"
+          # Verify ports are available
+          for port in 3001 3002; do
+            if lsof -ti:$port >/dev/null 2>&1; then
+              echo "❌ Failed to free port $port after cleanup"
+              echo "Processes still using port $port:"
+              lsof -i:$port
+              exit 1
+            else
+              echo "✅ Port $port is available"
+            fi
+          done
 
-      - name: Verify port 4500 is available
+      - name: Install dependencies for both services
         run: |
-          echo "🔍 Verifying port 4500 is available for Postman CLI mock server..."
+          echo "📦 Installing dependencies for login service..."
+          cd login-service
+          npm install
 
-          # Final verification that port 4500 is available
-          if lsof -ti:4500 >/dev/null 2>&1; then
-            echo "❌ Port 4500 is still in use after cleanup"
-            echo "Processes still using port 4500:"
-            lsof -i:4500
-            exit 1
+          echo "📦 Installing dependencies for logout service..."
+          cd ../logout-service
+          npm install
+
+      - name: Start Login Service
+        run: |
+          echo "🚀 Starting Login Service on port 3001..."
+          cd login-service
+
+          # Create .env file if it doesn't exist
+          if [ ! -f .env ]; then
+            cp .env.example .env
           fi
 
-          echo "✅ Port 4500 is available for Postman CLI mock server"
+          # Start the login service in background
+          npm start &
+          LOGIN_PID=$!
+          echo $LOGIN_PID > ../login-service.pid
+
+          echo "Login Service PID: $LOGIN_PID"
+          echo "Waiting for login service to start..."
+          sleep 10
+        env:
+          NODE_ENV: test
+          PORT: 3001
+          MONGODB_URI: mongodb://admin:password123@localhost:27017/login-service?authSource=admin
+
+      - name: Start Logout Service
+        run: |
+          echo "🚀 Starting Logout Service on port 3002..."
+          cd logout-service
+
+          # Create .env file if it doesn't exist
+          if [ ! -f .env ]; then
+            cp .env.example .env
+          fi
+
+          # Start the logout service in background
+          npm start &
+          LOGOUT_PID=$!
+          echo $LOGOUT_PID > ../logout-service.pid
+
+          echo "Logout Service PID: $LOGOUT_PID"
+          echo "Waiting for logout service to start..."
+          sleep 10
+        env:
+          NODE_ENV: test
+          PORT: 3002
+          MONGODB_URI: mongodb://admin:password123@localhost:27017/login-service?authSource=admin
+
+      - name: Wait for services to be ready
+        run: |
+          echo "🔍 Waiting for services to be ready..."
+
+          # Wait for Login Service (port 3001)
+          echo "Checking Login Service on port 3001..."
+          timeout=60
+          while ! curl -s http://localhost:3001/health > /dev/null 2>&1; do
+            sleep 2
+            timeout=$((timeout - 2))
+            if [ $timeout -le 0 ]; then
+              echo "❌ Login service failed to start within 60 seconds"
+              echo "Login service logs:"
+              if [ -f login-service.pid ]; then
+                ps -p $(cat login-service.pid) || echo "Login service process not found"
+              fi
+              echo "Port 3001 status:"
+              lsof -ti:3001 || echo "No process found on port 3001"
+              exit 1
+            fi
+          done
+          echo "✅ Login Service is ready on port 3001!"
+
+          # Wait for Logout Service (port 3002)
+          echo "Checking Logout Service on port 3002..."
+          timeout=60
+          while ! curl -s http://localhost:3002/health > /dev/null 2>&1; do
+            sleep 2
+            timeout=$((timeout - 2))
+            if [ $timeout -le 0 ]; then
+              echo "❌ Logout service failed to start within 60 seconds"
+              echo "Logout service logs:"
+              if [ -f logout-service.pid ]; then
+                ps -p $(cat logout-service.pid) || echo "Logout service process not found"
+              fi
+              echo "Port 3002 status:"
+              lsof -ti:3002 || echo "No process found on port 3002"
+              exit 1
+            fi
+          done
+          echo "✅ Logout Service is ready on port 3002!"
+
+          # Test service endpoints
+          echo "🧪 Testing service endpoints..."
+          echo "Login Service health check:"
+          curl -s http://localhost:3001/health | head -c 200
+          echo ""
+          echo "Logout Service health check:"
+          curl -s http://localhost:3002/health | head -c 200
+          echo ""
 
       - name: Install Postman CLI
         run: |
@@ -76,61 +184,109 @@ jobs:
       - name: Create results directory
         run: mkdir -p newman
 
-      - name: Run Postman Collection with Postman CLI Mock Server
+      - name: Run Postman Collection with Live Services
         continue-on-error: true
         run: |
-          echo "🧪 Running Postman collection tests with Postman CLI Mock Server..."
+          echo "🧪 Running Postman collection tests against live services..."
           echo "📁 Using local collection: postman/collections/Auth Service API.postman_collection.json"
-          echo "🎭 Using Postman mock configuration: postman/mocks/mock.json"
-          echo "🔧 Mock Server Environment variables:"
-          echo "  - mockServerUrl=http://localhost:4500"
-          echo "  - baseUrl=http://localhost:4500"
-          echo "  - loginServiceUrl=http://localhost:4500"
-          echo "  - logoutServiceUrl=http://localhost:4500"
-          echo "  - loginServicePort=4500"
-          echo "  - logoutServicePort=4500"
+          echo "🔧 Service URLs:"
+          echo "  - Login Service: http://localhost:3001"
+          echo "  - Logout Service: http://localhost:3002"
+          echo "  - loginServicePort=3001"
+          echo "  - logoutServicePort=3002"
           echo ""
 
-          curl -o- "https://dl-cli.pstmn.io/install/canary/unix.sh" | sh
-          postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }} || true
+          # Create environment file with live service URLs
+          cat > live-services-environment.json << 'EOF'
+          {
+            "id": "live-services-env-001",
+            "name": "Live Services",
+            "values": [
+              {
+                "key": "baseUrl",
+                "value": "http://localhost",
+                "type": "default",
+                "enabled": true
+              },
+              {
+                "key": "loginServicePort",
+                "value": "3001",
+                "type": "default",
+                "enabled": true
+              },
+              {
+                "key": "logoutServicePort",
+                "value": "3002",
+                "type": "default",
+                "enabled": true
+              }
+            ],
+            "_postman_variable_scope": "environment"
+          }
+          EOF
 
-          echo "🚀 Starting Postman collection with mock server..."
           postman collection run "postman/collections/Auth Service API.postman_collection.json" --report-events \
-            --environment "postman/environments/Local Mock Server.postman_environment.json" \
-            --mock "postman/mocks/mock.json"
-          
+            --environment "live-services-environment.json"
+
       - name: Lint API Specification
         run: postman spec lint "postman/specs/auth-service-api.yaml"
 
-      - name: Cleanup after tests
+      - name: Stop Services
         if: always()
         run: |
-          echo "🧹 Cleaning up after test run..."
+          echo "🛑 Stopping services..."
 
-          # Kill any remaining mock.js processes (in case Postman CLI didn't clean up properly)
-          echo "Killing any remaining mock.js processes..."
-          pkill -f "mock.js" 2>/dev/null || true
+          # Stop Login Service
+          if [ -f login-service.pid ]; then
+            echo "Stopping Login Service..."
+            LOGIN_PID=$(cat login-service.pid)
+            kill $LOGIN_PID 2>/dev/null || kill -9 $LOGIN_PID 2>/dev/null || true
+            rm login-service.pid
+            echo "✅ Login Service stopped"
+          fi
 
-          # Ensure no processes remain on port 4500
-          echo "Ensuring no processes remain on port 4500..."
-          lsof -ti:4500 | xargs -r kill -9 2>/dev/null || true
+          # Stop Logout Service
+          if [ -f logout-service.pid ]; then
+            echo "Stopping Logout Service..."
+            LOGOUT_PID=$(cat logout-service.pid)
+            kill $LOGOUT_PID 2>/dev/null || kill -9 $LOGOUT_PID 2>/dev/null || true
+            rm logout-service.pid
+            echo "✅ Logout Service stopped"
+          fi
+
+          # Kill any remaining service processes
+          pkill -f "login-service" 2>/dev/null || true
+          pkill -f "logout-service" 2>/dev/null || true
+
+          # Ensure no processes remain on ports 3001 and 3002
+          for port in 3001 3002; do
+            if lsof -ti:$port >/dev/null 2>&1; then
+              echo "Cleaning up remaining processes on port $port..."
+              lsof -ti:$port | xargs -r kill -9 2>/dev/null || true
+            fi
+          done
 
           # Wait for cleanup
-          sleep 2
+          sleep 3
+
+          # Clean up temporary files
+          rm -f live-services-environment.json
 
           # Verify cleanup
-          if lsof -ti:4500 >/dev/null 2>&1; then
-            echo "⚠️ Warning: Port 4500 may still be in use"
-            lsof -ti:4500 | xargs -r ps -p
-          else
-            echo "✅ Port 4500 is now free"
-          fi
+          for port in 3001 3002; do
+            if lsof -ti:$port >/dev/null 2>&1; then
+              echo "⚠️ Warning: Port $port may still be in use"
+              lsof -ti:$port | xargs -r ps -p
+            else
+              echo "✅ Port $port is now free"
+            fi
+          done
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: postman-test-results-local-mock
+          name: postman-test-results-live-services
           path: |
             newman/test-results.json
             newman/test-results.html
@@ -142,7 +298,9 @@ jobs:
           if [ -f newman/test-results.json ]; then
             echo "✅ Test results generated successfully"
             echo "📊 Check the artifacts for detailed HTML and JSON reports"
-            echo "🎯 Tests ran against Postman CLI Mock Server on http://localhost:4500"
+            echo "🎯 Tests ran against live services:"
+            echo "   - Login Service: http://localhost:3001"
+            echo "   - Logout Service: http://localhost:3002"
           else
             echo "❌ Test results were not generated"
           fi

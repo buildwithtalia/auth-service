@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: login-service
+  name: logout-service
   namespace: auth-system
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: login-service
+      app: logout-service
   template:
     metadata:
       labels:
-        app: login-service
+        app: logout-service
     spec:
       initContainers:
       - name: wait-for-mongodb
@@ -26,11 +26,11 @@ spec:
           done
           echo "MongoDB is ready!"
       containers:
-      - name: login-service
-        image: auth-login-service:bcryptjs
+      - name: logout-service
+        image: auth-logout-service:amd64
         imagePullPolicy: Never
         ports:
-        - containerPort: 3001
+        - containerPort: 3002
         env:
         - name: NODE_ENV
           valueFrom:
@@ -38,7 +38,7 @@ spec:
               name: app-config
               key: NODE_ENV
         - name: PORT
-          value: "3001"
+          value: "3002"
         - name: MONGODB_URI
           value: "mongodb://$(MONGODB_USERNAME):$(MONGODB_PASSWORD)@mongodb-service.auth-system.svc.cluster.local:27017/$(MONGODB_DATABASE)?authSource=admin"
         - name: MONGODB_USERNAME
@@ -66,16 +66,6 @@ spec:
             secretKeyRef:
               name: jwt-secrets
               key: jwt-refresh-secret
-        - name: JWT_EXPIRE
-          valueFrom:
-            configMapKeyRef:
-              name: app-config
-              key: JWT_EXPIRE
-        - name: JWT_REFRESH_EXPIRE
-          valueFrom:
-            configMapKeyRef:
-              name: app-config
-              key: JWT_REFRESH_EXPIRE
         - name: BCRYPT_ROUNDS
           valueFrom:
             configMapKeyRef:
@@ -90,9 +80,9 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: app-config
-              key: RATE_LIMIT_MAX_REQUESTS_LOGIN
+              key: RATE_LIMIT_MAX_REQUESTS_LOGOUT
         - name: CORS_ORIGIN
-          value: "http://logout-service.auth-system.svc.cluster.local:3002"
+          value: "http://login-service.auth-system.svc.cluster.local:3001"
         resources:
           requests:
             memory: "128Mi"
@@ -103,7 +93,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 3001
+            port: 3002
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -111,7 +101,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /health
-            port: 3001
+            port: 3002
           initialDelaySeconds: 5
           periodSeconds: 5
           timeoutSeconds: 5
