@@ -1,0 +1,8 @@
+name: Real Services
+values:
+  - key: baseUrl
+    value: 'http://localhost'
+  - key: loginServicePort
+    value: '3001'
+  - key: logoutServicePort
+    value: '3002'

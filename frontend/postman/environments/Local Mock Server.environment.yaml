@@ -1,0 +1,8 @@
+name: Local Mock Server
+values:
+  - key: baseUrl
+    value: 'http://localhost'
+  - key: loginServicePort
+    value: '4500'
+  - key: logoutServicePort
+    value: '4500'

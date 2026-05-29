@@ -1,0 +1,171 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #f5f6f8;
+  color: #1f2330;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.container {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+  padding: 2rem;
+}
+
+header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+}
+
+.subtitle {
+  margin: 0 0 1.5rem;
+  color: #6a7080;
+  font-size: 0.9rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0.6rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  color: #6a7080;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab.active {
+  color: #ff6c37;
+  border-bottom-color: #ff6c37;
+  font-weight: 600;
+}
+
+.form {
+  display: none;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form.active {
+  display: flex;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: #4a5060;
+}
+
+input {
+  padding: 0.6rem 0.75rem;
+  font-size: 0.95rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+input:focus {
+  outline: none;
+  border-color: #ff6c37;
+  box-shadow: 0 0 0 3px rgba(255, 108, 55, 0.15);
+}
+
+.hint {
+  color: #8a8f9c;
+  font-size: 0.75rem;
+}
+
+button[type="submit"],
+#logout-btn {
+  background: #ff6c37;
+  color: #fff;
+  border: none;
+  padding: 0.7rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+button[type="submit"]:hover,
+#logout-btn:hover {
+  background: #e95b27;
+}
+
+button[type="submit"]:disabled {
+  background: #ffb091;
+  cursor: not-allowed;
+}
+
+#profile-view h2 {
+  margin: 0 0 1rem;
+}
+
+.profile {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1rem;
+  margin: 0 0 1.5rem;
+  font-size: 0.9rem;
+}
+
+.profile dt {
+  color: #6a7080;
+}
+
+.profile dd {
+  margin: 0;
+  word-break: break-all;
+}
+
+.message {
+  margin-top: 1.25rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.88rem;
+}
+
+.message.success {
+  background: #e8f7ee;
+  color: #1f6b3a;
+  border: 1px solid #b9e5c8;
+}
+
+.message.error {
+  background: #fde9e7;
+  color: #8a2a22;
+  border: 1px solid #f4c1bb;
+}
+
+footer {
+  margin-top: 1.5rem;
+  text-align: center;
+  color: #8a8f9c;
+}
+
+footer code {
+  background: #f0f1f4;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+}

@@ -1,0 +1,173 @@
+$kind: collection
+description: |-
+  # Auth Service API
+
+  A secure, production-ready authentication system built with a microservices architecture. The system is split into two specialized services working together to provide comprehensive authentication and session management capabilities.
+
+  ## 🏗️ Architecture Overview
+
+  This API consists of two independent microservices:
+
+  - **Login Service** (Port 3001): Handles user registration, authentication, and token generation
+  - **Logout Service** (Port 3002): Manages token invalidation, session termination, and token blacklisting
+
+  ## 🚀 Getting Started
+
+  ### Base URLs
+
+  The services run on localhost by default:
+
+  ```
+  Login Service:  http://localhost:3001
+  Logout Service: http://localhost:3002
+  ```
+
+  ### Environment Variables
+
+  This collection uses the following variables:
+
+  | Variable | Default Value | Description |
+  |----------|---------------|-------------|
+  | `baseUrl` | `http://localhost` | Base URL for both services |
+  | `loginServicePort` | `3001` | Port for Login Service |
+  | `logoutServicePort` | `3002` | Port for Logout Service |
+  | `accessToken` | (empty) | JWT access token (auto-populated after login) |
+  | `refreshToken` | (empty) | JWT refresh token (auto-populated after login) |
+  | `userId` | (empty) | User ID (auto-populated after registration) |
+
+  ## 🔐 Authentication
+
+  This API uses **Bearer Token Authentication** with JWT (JSON Web Tokens).
+
+  ### Token Types
+
+  1. **Access Token**: Short-lived token (24 hours) used for authenticating API requests
+  2. **Refresh Token**: Long-lived token (7 days) stored as HTTP-only cookie, used to obtain new access tokens
+
+  ### Using Authentication
+
+  Include the access token in the Authorization header for protected endpoints:
+
+  ```
+  Authorization: Bearer {{accessToken}}
+  ```
+
+  The collection automatically manages tokens through test scripts:
+  - Login/Register requests save the `accessToken` to collection variables
+  - Protected requests use `{{accessToken}}` variable
+  - Refresh endpoint updates the token automatically
+
+  ## 📋 Common Workflows
+
+  ### 1. New User Registration
+
+  ```
+  POST /api/auth/register
+  ```
+
+  Register a new user account. The request automatically generates random credentials that meet password requirements.
+
+  ### 2. User Login
+
+  ```
+  POST /api/auth/login
+  ```
+
+  Authenticate with email and password. Returns an access token and sets a refresh token cookie.
+
+  ### 3. Access Protected Resources
+
+  ```
+  GET /api/auth/me
+  Authorization: Bearer {{accessToken}}
+  ```
+
+  Use the access token to access protected endpoints like user profile.
+
+  ### 4. Token Refresh
+
+  ```
+  POST /api/auth/refresh
+  ```
+
+  When the access token expires, use this endpoint to get a new one using the refresh token cookie.
+
+  ### 5. Logout
+
+  ```
+  POST /api/logout
+  Authorization: Bearer {{accessToken}}
+  ```
+
+  Invalidate the current session by blacklisting the access token.
+
+  ## 📊 Response Format
+
+  All endpoints return JSON responses with consistent structure:
+
+  ### Success Response
+  ```json
+  {
+    "success": true,
+    "data": { ... },
+    "message": "Operation successful"
+  }
+  ```
+
+  ### Error Response
+  ```json
+  {
+    "success": false,
+    "error": "Error message",
+    "code": "ERROR_CODE"
+  }
+  ```
+
+  ## 🔒 Security Features
+
+  - **Password Requirements**: 8-128 characters with at least one lowercase, uppercase, number, and special character
+  - **JWT Tokens**: Cryptographically signed tokens with expiration
+  - **Token Blacklisting**: Logout immediately invalidates tokens
+  - **HTTP-Only Cookies**: Refresh tokens stored securely
+  - **Session Management**: Track and manage active sessions across devices
+
+  ## ⚠️ Common Error Codes
+
+  | Status Code | Description |
+  |-------------|-------------|
+  | `200` | Success |
+  | `201` | Resource created successfully |
+  | `400` | Bad request - Invalid input data |
+  | `401` | Unauthorized - Invalid or missing token |
+  | `403` | Forbidden - Token blacklisted or insufficient permissions |
+  | `404` | Not found - Resource doesn't exist |
+  | `409` | Conflict - Resource already exists (e.g., email in use) |
+  | `500` | Internal server error |
+
+  ## 🧪 Testing
+
+  This collection includes comprehensive test scripts that automatically:
+  - Validate response status codes
+  - Check response structure and data types
+  - Verify JWT token format and expiration
+  - Extract and save tokens for subsequent requests
+  - Validate business logic rules
+
+  Run the entire collection using the Collection Runner to test all endpoints in sequence.
+
+  ## 📝 Additional Notes
+
+  - All timestamps are in ISO 8601 format
+  - Tokens are automatically managed by collection scripts
+  - The Logout Service maintains a blacklist of invalidated tokens
+  - Expired tokens are automatically cleaned up by the maintenance endpoint
+variables:
+  baseUrl: http://localhost
+  loginServicePort: "3001"
+  logoutServicePort: "3002"
+  accessToken: "null"
+  refreshToken: ""
+  userId: 697009f24c20cdd717a0d499
+  randomEmail: ""
+  randomPassword: ""
+  userEmail: ""
